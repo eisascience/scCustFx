@@ -1,0 +1,38 @@
+Package: scCustFx
+Type: Package
+Title: single-cell custom fxs Package
+Version: 0.0.1
+Author: Eisa Mahyari
+Maintainer: The package maintainer <mahyarie@ohsu.edu>
+Description: The goal of this package is bringing together tools and pipelines for the analysis of single-cell RNASeq data to complement other packages like Seurat and OOSAP.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    Seurat,
+    Rlabkey,
+    data.table,
+    dplyr,
+    tidyr,
+    naturalsort,
+    Matrix,
+    ggplot2,
+    cowplot,
+    knitr,
+    Hmisc,
+    RColorBrewer,
+    stringr,
+    ggbeeswarm,
+Suggests:
+    ggvis,
+    devtools,
+    testthat (>= 2.1.0)
+Remotes:
+RoxygenNote: 7.1.1
+Collate: 
+    'Seurat_based.R'
+    'Visualizations_general.R'
+    'Visualizations_Seurat_based.R'
+
