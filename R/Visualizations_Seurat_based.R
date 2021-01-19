@@ -70,3 +70,55 @@ QuantileADTcounter <- function(so, features=NULL, min.cells=10, slot="data", thr
   })
   return(ggls)
 }
+
+
+
+#' @title plot_libSize
+#' 
+#' @description Plots a histogram of ADT/protein/CITE-seq markers (optional: identify percent of cells cut by a threshold)
+#' @param so A Seurat Object 
+#' @param assay Assay within the seurat object
+#' @param slot which ADT slot data or count
+#' @param featureSplit a feature of metadata; if NULL no split id done. 
+#' @return A ggplot object
+#' @export
+plot_libSize <- function(so, assay="ADT", slot = "counts", 
+                         featureSplit=NULL, col_vector = NULL){
+  
+  if(is.null) col_vector = scCustFx:::ColorTheme()$col_vector
+  
+  if(is.null(featureSplit)) stop("featureSplit is null")
+    
+  if(!is.null(featureSplit)) {
+    
+    if(!featureSplit %in% colnames(so@meta.data)) {
+      stop("featureSplit not in meta.data")
+      
+    } else {
+      
+      so$tempLibSize = colSums(GetAssayData(so, assay = assay, slot=slot))
+      
+      so$tempGrouping = factor(so@meta.data[,featureSplit])
+      
+      tempOut = so@meta.data %>% group_by(tempGrouping)  %>% 
+        summarize(mean_LibSize = sum(tempLibSize, na.rm = TRUE))
+      
+      
+    }} 
+  
+  
+  tempOut %>% 
+    reshape2::melt() %>% 
+    ggplot(aes(y=log10(value), x=tempGrouping, fill=tempGrouping)) + 
+    geom_bar( position = 'dodge',stat='identity') +
+    theme_classic() +
+    theme(legend.position="bottom",
+          legend.direction="horizontal",
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 90)) + 
+    ggtitle(paste0(Title, "\nSum log10 library size per barcode Prefix")) +
+    scale_fill_manual(values=col_vector)
+  
+}
+                               
+                               

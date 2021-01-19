@@ -35,4 +35,8 @@ Collate:
     'Seurat_based.R'
     'Visualizations_general.R'
     'Visualizations_Seurat_based.R'
+    'Normalizations.R'
+    'Colors.R'
+    'Transformations.R'
+    'Utils.R'
 
