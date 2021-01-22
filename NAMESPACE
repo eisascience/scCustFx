@@ -2,9 +2,11 @@
 
 export(ColorTheme)
 export(DownSample_SerObj_perLevel)
+export(ProcessSeurat1b)
 export(QuantileADTcounter)
 export(ReduceSerObj_HTO)
 export(avgExpr_norm)
+export(download_SeuratHashingCalls)
 export(gg_barplot_table)
 export(gg_tSNE_df)
 export(heatmap_table)

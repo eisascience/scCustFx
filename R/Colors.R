@@ -19,7 +19,7 @@ ColorTheme <- function(){
                    '#9a6324', '#fffac8', '#800000', '#aaffc3',
                    '#808000', '#ffd8b1', '#000075', '#808080',
                    '#ffffff', '#000000')
-  
+  # c("#00AFBB", "#E7B800", "#FC4E07")
   
   col_vector2 <- as.character(sapply(1:20, function(xN){
     c(col_vector[xN], col_vector2[xN])

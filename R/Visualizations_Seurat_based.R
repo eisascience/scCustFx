@@ -9,7 +9,8 @@
 #' @param thresh a vertical line is plotted at this value and % of cells below it is computed and plotted
 #' @return A ggplot object
 #' @export
-QuantileADTcounter <- function(so, features=NULL, min.cells=10, slot="data", thresh = NULL){
+QuantileADTcounter <- function(so, features=NULL, min.cells=10, 
+                               slot="data", thresh = NULL){
   print("Setting default assay to ADT")
   DefaultAssay(so) = "ADT"
   

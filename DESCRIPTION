@@ -32,11 +32,14 @@ Suggests:
 Remotes:
 RoxygenNote: 7.1.1
 Collate: 
-    'Seurat_based.R'
-    'Visualizations_general.R'
-    'Visualizations_Seurat_based.R'
-    'Normalizations.R'
     'Colors.R'
+    'LabKey_based.R'
+    'Normalizations.R'
+    'OOSAP_based.R'
+    'Seurat_based.R'
     'Transformations.R'
     'Utils.R'
+    'Visualizations_general.R'
+    'Visualizations_Seurat_based.R'
+    
 
