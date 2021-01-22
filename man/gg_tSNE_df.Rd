@@ -10,6 +10,8 @@ gg_tSNE_df(
   Markers = NULL,
   splitby = NULL,
   verbose = T,
+  size = 0.2,
+  alpha = 0.6,
   Title = "",
   width = 2000,
   height = 2300,

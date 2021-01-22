@@ -65,6 +65,7 @@ gg_tSNE_df <- function(DF,
                        Markers=NULL, 
                        splitby=NULL,
                        verbose = T,
+                       size=0.2, alpha=0.6,
                        Title="",
                        width = 2000, height = 2300, pointsize = 20, ncol=4){
   
@@ -80,7 +81,7 @@ gg_tSNE_df <- function(DF,
       
       ExprPlots[[xN]] <- ggplot(reshape2::melt(DF[, c("tSNE1", "tSNE2", xN)], id.vars=c("tSNE1", "tSNE2")),
                                 aes(tSNE1, tSNE2, color=asinh(value))) +
-        geom_point(size=0.2, alpha=0.6)+theme_bw() +
+        geom_point(size=size, alpha=alpha)+theme_bw() +
         theme(legend.position = "bottom") +
         scale_color_viridis(option="A") +
         ggtitle(paste0(Title, "\ntSNE - ", xN))
@@ -97,7 +98,7 @@ gg_tSNE_df <- function(DF,
       if(verbose) print(xN)
       ExprPlots[[xN]] <- ggplot(reshape2::melt(DF[, c("tSNE1", "tSNE2", "VarSplit", xN)], id.vars=c("tSNE1", "tSNE2", "VarSplit")),
                                 aes(tSNE1, tSNE2, color=asinh(value))) +
-        geom_point(size=0.2, alpha=0.6)+theme_bw() +
+        geom_point(size=size, alpha=alpha)+theme_bw() +
         theme(legend.position = "bottom") +
         scale_color_viridis(option="A") +
         ggtitle(paste0(Title, "\ntSNE - ", xN, "\n per", splitby))+ facet_wrap(~VarSplit)

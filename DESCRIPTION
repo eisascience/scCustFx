@@ -34,6 +34,7 @@ RoxygenNote: 7.1.1
 Collate: 
     'Colors.R'
     'LabKey_based.R'
+    'MitoGenes.R'
     'Normalizations.R'
     'OOSAP_based.R'
     'Seurat_based.R'
