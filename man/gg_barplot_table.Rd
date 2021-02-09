@@ -4,12 +4,14 @@
 \alias{gg_barplot_table}
 \title{gg_barplot_table}
 \usage{
-gg_barplot_table(TBL, Title = "")
+gg_barplot_table(TBL, Title = "", gg_theme = NULL)
 }
 \arguments{
 \item{TBL}{A table (base R table())}
 
 \item{Title}{A title else ''}
+
+\item{gg_theme}{a ggplot theme or NULL}
 }
 \value{
 A ggplot

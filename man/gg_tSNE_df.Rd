@@ -16,7 +16,11 @@ gg_tSNE_df(
   width = 2000,
   height = 2300,
   pointsize = 20,
-  ncol = 4
+  ncol = 4,
+  limits = c(0, 1),
+  gg_theme = NULL,
+  printPlot = T,
+  vridis_col_opt = "A"
 )
 }
 \arguments{
@@ -31,6 +35,8 @@ gg_tSNE_df(
 \item{verbose}{if T verbose output is printed}
 
 \item{Title}{A title else ''}
+
+\item{gg_theme}{a ggplot theme or NULL}
 }
 \value{
 A ggplot

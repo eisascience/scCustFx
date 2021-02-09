@@ -30,3 +30,45 @@ ColorTheme <- function(){
   
   return(list(col_vector=col_vector, scaleyellowred=scaleyellowred))
 }
+
+
+
+#' @title Cold2Hot
+#'
+#' @description a vector of colors that are in sequence well for a heatmap
+#' @return A vector of colors.
+#' @export
+Cold2Hot <- function(plotDemo = F){
+  library(wesanderson)
+  
+  Rbrew10_Spec = RColorBrewer::brewer.pal(10, "Spectral")
+  Wes10_Ziss = as.character(wes_palette("Zissou1", 10, type = "continuous"))
+  Rbrew10_PRGn = RColorBrewer::brewer.pal(10, "PRGn")
+  
+  col_vec = c(Wes10_Ziss, Rbrew10_Spec, Rbrew10_PRGn, c("black", "navy", "gold", "firebrick", "dodgerblue"))
+  
+  # barplot(rep(1, 35), col =col_vec,
+  #         las=2, names.arg = 1:35)
+  
+  if(plotDemo) barplot(rep(1, 14), col =col_vec[c(32, 35, 19, 4, 18, 28, 15, 6, 13, 10, 11, 22, 21)])
+  
+  return(col_vec[c( 32, 35, 19, 4, 18, 28, 15, 6, 13, 10, 11, 22, 21)])
+  
+  
+}
+
+##TODO: make a function that takes parameters like color set and returns the scale_color_gradientn 
+
+#' @title scale_color_gradient_heat1
+#'
+#' @description a vector of colors that are in sequence well for a heatmap
+#' @return A vector of colors.
+#' @export
+scale_color_gradient_heat1 <- ggplot2::scale_color_gradientn(colours = Cold2Hot() )
+
+#' @title scale_color_gradient_heat2
+#'
+#' @description a vector of colors that are in sequence well for a heatmap
+#' @return A vector of colors.
+#' @export
+scale_color_gradient_heat2 <- ggplot2::scale_color_gradientn(colours = c("black", "navy", "blue", "dodgerblue", "gold", "red"))

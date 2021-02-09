@@ -25,22 +25,27 @@ Imports:
     RColorBrewer,
     stringr,
     ggbeeswarm,
+    CellMembrane
 Suggests:
     ggvis,
     devtools,
     testthat (>= 2.1.0)
 Remotes:
+    github::BimberLabInternal/CellMembrane
 RoxygenNote: 7.1.1
 Collate: 
     'Colors.R'
+    'gg_themes.R'
     'LabKey_based.R'
     'MitoGenes.R'
     'Normalizations.R'
+    'CellMembrane_based.R'
     'OOSAP_based.R'
     'Seurat_based.R'
     'Transformations.R'
     'Utils.R'
     'Visualizations_general.R'
     'Visualizations_Seurat_based.R'
+    'old.R'
     
 
