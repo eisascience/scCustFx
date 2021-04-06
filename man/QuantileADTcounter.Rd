@@ -15,15 +15,17 @@ QuantileADTcounter(
 \arguments{
 \item{so}{A Seurat Object}
 
+\item{features}{Features}
+
 \item{min.cells}{a horizontal line is plotted at this value}
 
 \item{slot}{which ADT slot data or count}
 
-\item{thresh}{a vertical line is plotted at this value and % of cells below it is computed and plotted}
+\item{thresh}{a vertical line is plotted at this value and perc. of cells below it is computed and plotted}
 }
 \value{
 A ggplot object
 }
 \description{
-Plots a histogram of ADT/protein/CITE-seq markers (optional: identify percent of cells cut by a threshold)
+Plots a histogram of ADT/protein/CITE-seq markers optional: identify percent of cells cut by a threshold
 }

@@ -184,8 +184,7 @@ autoProcessRawSerObjs.basic <- function(seuratObjects, verbose = T,
     for (datasetId in names(seuratObjects)) {
       seuratObj <- seuratObjects[[datasetId]]
       
-      seuratObj <- CellMembrane::RunPcaSteps(seuratObj, variableGenesWhitelist = variableGenesInclusion, 
-                                             variableGenesBlacklist = variableGenesExclusion, npcs = npcs)
+      seuratObj <- CellMembrane::RunPcaSteps(seuratObj, npcs = npcs)
       seuratObj <- CellMembrane::FindClustersAndDimRedux(seuratObj, minDimsToUse = minDimsToUse)
       
       newSeuratObjects[[datasetId]] <- seuratObj
@@ -393,8 +392,7 @@ autoProcessRawSerObjs.prime <- function(seuratObjects, verbose = T,
     for (datasetId in names(seuratObjects)) {
       seuratObj <- seuratObjects[[datasetId]]
       
-      seuratObj <- CellMembrane::RunPcaSteps(seuratObj, variableGenesWhitelist = variableGenesInclusion, 
-                                             variableGenesBlacklist = variableGenesExclusion, npcs = npcs)
+      seuratObj <- CellMembrane::RunPcaSteps(seuratObj, npcs = npcs)
       seuratObj <- CellMembrane::FindClustersAndDimRedux(seuratObj, minDimsToUse = minDimsToUse)
     
       newSeuratObjects[[datasetId]] <- seuratObj

@@ -2,11 +2,12 @@
 
 #' @title QuantileADTcounter
 #'
-#' @description Plots a histogram of ADT/protein/CITE-seq markers (optional: identify percent of cells cut by a threshold)
+#' @description Plots a histogram of ADT/protein/CITE-seq markers optional: identify percent of cells cut by a threshold
 #' @param so A Seurat Object 
 #' @param min.cells a horizontal line is plotted at this value
+#' @param features Features
 #' @param slot which ADT slot data or count
-#' @param thresh a vertical line is plotted at this value and % of cells below it is computed and plotted
+#' @param thresh a vertical line is plotted at this value and perc. of cells below it is computed and plotted
 #' @return A ggplot object
 #' @export
 QuantileADTcounter <- function(so, features=NULL, min.cells=10, 
