@@ -26,12 +26,14 @@ Imports:
     RColorBrewer,
     stringr,
     ggbeeswarm,
-    CellMembrane
+    CellMembrane,
+    wesanderson
 Suggests:
     ggvis,
     devtools,
     testthat (>= 2.1.0)
 Remotes:
     bimberlabinternal/CellMembrane,
-    mojaveazure/seurat-disk
+    mojaveazure/seurat-disk,
+    karthik/wesanderson
 RoxygenNote: 7.1.1
