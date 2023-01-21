@@ -22,6 +22,7 @@ is.odd <- function(x) x %% 2 != 0
 #' @keywords transpose, t
 #' @param dt The datatable
 #' @import data.table
+#' @export
 TransposeDT <- function(dt, varlabel="myVar") {
   dtrows = names(dt)
   dtcols = as.list(c(dt[,1]))
@@ -40,6 +41,7 @@ TransposeDT <- function(dt, varlabel="myVar") {
 #' @description Sum a vector of log valued
 #' @return A vector.
 #' @keywords log, sum
+#' @export
 LogAdd <- function(x) {
   mpi <- max(x)
   return(mpi + log(x = sum(exp(x = x - mpi))))
@@ -51,9 +53,28 @@ LogAdd <- function(x) {
 #' @description uniformly sample a dataframe based on factor and porportion
 #' @return index of the uniformly sampled samples
 #' @keywords sample, uniform
+#' @export
 UniformSampleDF_FacPor <- function(x, ClassF, p){
   nr <- NROW(x)
   size <- (nr * p) %/% length(unique(ClassF))
   idx <- lapply(split(seq_len(nr), ClassF), function(.x) sample(.x, size))
   unlist(idx)
+}
+
+
+#' @title RearrangeLabelsByFrequency
+#'
+#' @description reassign the labels of the elements in the vector based on the frequency of their original labels. 
+#' @return a vector relabeled frequency wise
+#' @export
+RearrangeLabelsByFrequency <- function(vec) {
+  tab <- table(vec)
+  ordered_tab <- sort(tab, decreasing = TRUE)
+  relabeled_vec <- vec
+  label <- 0
+  for (val in names(ordered_tab)) {
+    relabeled_vec[vec == val] <- label
+    label <- label + 1
+  }
+  return(relabeled_vec)
 }

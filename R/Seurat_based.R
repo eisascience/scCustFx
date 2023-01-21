@@ -1,3 +1,28 @@
+#' @title SubsetSerByCoordinates
+#'
+#' @description Remove unwanted HTOS from Seurat objects
+#' @param so A Seurat Object 
+#' @param reduction_method an input of  = c("tSNE", "UMAP", "PCA") default tSNE
+#' @param x_range an input of  two numbers defining the x range default c(-1, 1)
+#' @param y_range aan input of  two numbers defining the y range default c(-1, 1)
+#' @return A subset Seurat object.
+#' @export
+SubsetSerByCoordinates <- function(so, reduction_method = "tSNE", x_range = c(-1, 1), y_range = c(-1, 1)){
+  if(reduction_method == "tSNE"){
+    dim_1 <- "TSNE1"
+    dim_2 <- "TSNE2"
+  }else if(reduction_method == "UMAP"){
+    dim_1 <- "UMAP1"
+    dim_2 <- "UMAP2"
+  }else if(reduction_method == "PCA"){
+    dim_1 <- "PCA1"
+    dim_2 <- "PCA2"
+  }
+  subsetted_obj <- SubsetData(so, subset = (so@reductions[[reduction_method]]@cell.embeddings[,dim_1] > x_range[1] & seurat_obj@reductions[[reduction_method]]@cell.embeddings[,dim_1] < x_range[2]) & (seurat_obj@reductions[[reduction_method]]@cell.embeddings[,dim_2] > y_range[1] & seurat_obj@reductions[[reduction_method]]@cell.embeddings[,dim_2] < y_range[2]))
+  return(subsetted_obj)
+}
+
+
 
 #' @title ReduceSerObj_HTO
 #'
