@@ -27,7 +27,8 @@ Imports:
     stringr,
     ggbeeswarm,
     CellMembrane,
-    wesanderson
+    wesanderson,
+    circlize
 Suggests:
     ggvis,
     devtools,

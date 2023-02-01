@@ -15,6 +15,7 @@ make_RNA_heatmap(
   rowdendside,
   fontsize,
   titlefontsize,
+  pairedList2 = NULL,
   asGG = F
 )
 }

@@ -390,6 +390,52 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
   }
 }
 
+#' @title gg_barplot_table, aka OOSAP::PlotMyTable
+#'
+#' @description Takes a table and plots a gg barplot 
+#' @param MyTable A 2way table (base R table()) 
+#' @param Title A title else ''
+#' @param legend.position legend position defautl "bottom"
+#' @param PlotCombo if T plots % and count plots together
+#' @return A ggplot 
+#' @export
+gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", PlotCombo = F){
+  tempMeltDF <- melt(MyTable)
+  
+  
+  p1 <- (ggplot(tempMeltDF) +
+           geom_bar(aes(x=Var2, y=value, fill=factor(Var1)), stat="identity", width = 0.7) +
+           theme_bw()  + scale_fill_manual(values=col_vector) +
+           theme(legend.position=legend.position,
+                 legend.direction="horizontal",
+                 legend.title = element_blank()) +
+           ggtitle(paste0(Title, "\n Total Contribution")) + ylab("Total No."))
+  
+  
+  p2<- (ggplot(tempMeltDF) +
+          geom_bar(aes(x=Var2, y=value, fill=factor(Var1)), stat="identity", width = 0.7, position="fill") +
+          theme_bw()  + scale_fill_manual(values=col_vector) +
+          theme(legend.position=legend.position,
+                legend.direction="horizontal",
+                legend.title = element_blank())+
+          scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1),
+                             labels = scales::percent(c(0, 0.25, 0.5, 0.75, 1))) +
+          ggtitle(paste0(Title, "\n Relative % Contribution")) + ylab("(%)"))
+  
+
+  
+  
+  if(PlotCombo) {
+    print(cowplot::plot_grid(p1, p2, ncol = 1)) 
+    p1 / p2
+    } else {
+    p1
+    p2
+  }
+  
+}
+
+
 
 #' @title gg_barplot_table
 #'

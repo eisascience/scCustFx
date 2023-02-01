@@ -8,7 +8,7 @@ ProduceComboHeatmap(
   seuratObj,
   markerVec,
   pairedList,
-  pairedList2,
+  pairedList2 = NULL,
   labelColumn,
   prefix,
   adtoutput = "unpaired",

@@ -13,8 +13,8 @@
 #' @param asGG returns GGplot not list if true
 #' @return A heatmap of RNA expression.
 #' @export
-make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit, columnsplit, 
-                            size, coldendside, rowdendside, fontsize, titlefontsize, asGG = F){
+make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit, columnsplit,
+                            size, coldendside, rowdendside, fontsize, titlefontsize, pairedList2=NULL, asGG = F){
   avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
                                          features = markerVec,
                                          slot = 'counts', return.seurat = T,
@@ -154,14 +154,14 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
 #' @param gap Gap between panels (default: 0)
 #' @return A list of differentially expressed genes
 #' @export
-ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, 
+ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NULL, 
                                 labelColumn, prefix, adtoutput = "unpaired", 
                                 rowsplit = NULL, columnsplit = NULL, 
                                 size, coldend = TRUE, rowdend = TRUE, 
                                 coldendside = "bottom", rowdendside = "left", 
                                 fontsize = 12, titlefontsize = 20, gap = 0){
   
-  P1 = scCustFx::make_RNA_heatmap(seuratObj, markerVec, labelColumn, rowsplit, columnsplit, size, coldendside, rowdendside, fontsize, titlefontsize)
+  P1 = scCustFx::make_RNA_heatmap(seuratObj, markerVec, labelColumn, rowsplit, columnsplit, size, coldendside, rowdendside, fontsize, titlefontsize, pairedList2)
   col_RNA = P1$col_RNA
   P1 = P1$plot
   
