@@ -14,6 +14,17 @@ is.even <- function(x) x %% 2 == 0
 is.odd <- function(x) x %% 2 != 0
 
 
+#' @title discretize_table
+#'
+#' @description discretize a table; if tbl>0 then 1 else 0
+#' @param tbl, numbers.
+#' @return histo_numers
+#' @export
+discretize_table <- function(tbl=NULL){
+  tbl[tbl>0] = 1
+  tbl
+} 
+
 
 #' @title transposedt
 #'
