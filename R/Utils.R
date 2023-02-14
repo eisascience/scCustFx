@@ -13,6 +13,25 @@ is.even <- function(x) x %% 2 == 0
 #' @export
 is.odd <- function(x) x %% 2 != 0
 
+#' @title odds
+#'
+#' @description returns odd values only
+#' @param x, numbers.
+#' @return odd values numerical vector
+#' @export
+odds <- function(x){
+  x[is.odd(x)]
+}
+
+#' @title evens
+#'
+#' @description returns even values only
+#' @param x, numbers.
+#' @return even values numerical vector
+#' @export
+evens <- function(x){
+  x[is.even(x)]
+}
 
 #' @title discretize_table
 #'

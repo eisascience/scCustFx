@@ -28,7 +28,9 @@ Imports:
     ggbeeswarm,
     CellMembrane,
     wesanderson,
-    circlize
+    circlize,
+    tidyr,
+    ComplexHeatmap
 Suggests:
     ggvis,
     devtools,

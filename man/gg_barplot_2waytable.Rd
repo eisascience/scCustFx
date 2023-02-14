@@ -8,7 +8,13 @@ gg_barplot_2waytable(
   MyTable,
   Title = "",
   legend.position = "bottom",
-  PlotCombo = F
+  PlotCombo = F,
+  xlab = "",
+  xtext_angle = 45,
+  hjust = 0.9,
+  vjust = 0.8,
+  base_size = 10,
+  returnlist = T
 )
 }
 \arguments{
@@ -19,6 +25,18 @@ gg_barplot_2waytable(
 \item{legend.position}{legend position defautl "bottom"}
 
 \item{PlotCombo}{if T plots % and count plots together}
+
+\item{xlab}{x axis label}
+
+\item{xtext_angle}{x axis label}
+
+\item{hjust}{if angle is 90 set to 1}
+
+\item{vjust}{if angle is 90 set to 0.5}
+
+\item{base_size}{numerical}
+
+\item{returnlist}{logical}
 }
 \value{
 A ggplot

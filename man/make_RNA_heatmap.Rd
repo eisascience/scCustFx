@@ -11,12 +11,18 @@ make_RNA_heatmap(
   rowsplit,
   columnsplit,
   size,
-  coldendside,
-  rowdendside,
+  clus_cols = TRUE,
+  show_column_dend = T,
+  clus_rows = TRUE,
+  show_row_dend = T,
   fontsize,
   titlefontsize,
   pairedList2 = NULL,
-  asGG = F
+  asGG = F,
+  column_names_side = "bottom",
+  column_dend_side = "bottom",
+  row_names_side = "left",
+  row_dend_side = "left"
 )
 }
 \arguments{
@@ -32,15 +38,15 @@ make_RNA_heatmap(
 
 \item{size}{Size of plot.}
 
-\item{coldendside}{Dendrogram on the column side.}
-
-\item{rowdendside}{Dendrogram on the row side.}
-
 \item{fontsize}{Font size for labels.}
 
 \item{titlefontsize}{Font size for plot title.}
 
 \item{asGG}{returns GGplot not list if true}
+
+\item{coldendside}{Dendrogram on the column side.}
+
+\item{rowdendside}{Dendrogram on the row side.}
 }
 \value{
 A heatmap of RNA expression.

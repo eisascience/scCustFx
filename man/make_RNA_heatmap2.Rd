@@ -21,6 +21,9 @@ make_RNA_heatmap2(
   fontsize = 8,
   titlefontsize = 12,
   coldendside = "bottom",
+  column_names_side = "bottom",
+  row_names_side = "left",
+  row_dend_side = "right",
   asGG = T
 )
 }

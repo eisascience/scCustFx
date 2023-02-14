@@ -1,3 +1,108 @@
+
+#' Calculate the percent expressed cells for each group in a Seurat object
+#'
+#' @param serobj A Seurat object
+#' @param group.by A meta feature used to group the cells
+#' @param features A vector of features (genes) to calculate the percent expressed cells for
+#' @param plot A logical indicating whether to plot 
+#' @param topN select top N genes  
+#' @param cols color vector
+#' @return A data frame with the percent expressed cells for each group and feature
+#' @export
+VlnPlot_subset <- function(serobj, group.by, features, plot=F, topN = 10, xlab = "",
+                           cols=c("#8DD3C7", "#33A02C", "#F4CAE4", "#A6CEE3", "#FDCDAC",
+                                  "#B2DF8A","#E78AC3", "#1F78B4", "#FB9A99", "#E31A1C", 
+                                  "#66C2A5", "#FF7F00"), addDimplot = T, returnLs = T){
+  
+  
+  #fix factor
+  serobj@meta.data[,group.by] = naturalsort::naturalfactor(as.character(serobj@meta.data[,group.by]))
+  
+  features = unique(features)
+
+  
+  PctExprDF =  scCustFx:::PercentExpressed(serobj, 
+                                           group.by=group.by, 
+                                           features=features, 
+                                           plot_perHM = plot)
+  
+  PctExprDF$max = apply(PctExprDF, 1, max)
+  PctExprDF$min = apply(PctExprDF, 1, min)
+  
+  PctExprDF$maxminDelta = PctExprDF$max-PctExprDF$min
+  
+  
+  Idents(serobj) = group.by
+  
+  vln <- VlnPlot(serobj, 
+          features = rownames( PctExprDF[order(PctExprDF$maxminDelta, decreasing = T)[1:topN],]), 
+          stack = TRUE, flip = TRUE, fill.by = "ident",
+          cols = cols) + NoLegend() + xlab(xlab) #+
+    # theme_classic(base_size = 14) 
+  
+  
+  if(addDimplot){
+    dim <- DimPlot(serobj, 
+            label = T, label.size = 10, label.box = T, repel = T,
+            cols=cols,
+            group.by=group.by) + 
+      coord_flip()  + scale_y_reverse() +
+      theme_classic(base_size = 14) + 
+      NoLegend() +
+      theme(axis.line = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            plot.title = element_blank()
+      )
+    if(returnLs) {
+      list(dim=dim, vln=vln)
+    } else {
+      dim / vln
+    }
+  } else  {
+    vln
+  }
+ 
+  
+}
+
+
+
+
+
+#' Calculate the percent expressed cells for each group in a Seurat object
+#'
+#' @param so A Seurat object
+#' @param group.by A meta feature used to group the cells
+#' @param features A vector of features (genes) to calculate the percent expressed cells for
+#' @param plot_perHM A logical indicating whether to plot a heatmap of the results
+#' @return A data frame with the percent expressed cells for each group and feature
+#' @export
+PercentExpressed <- function(so, group.by, features, plot_perHM = F){
+  
+  print("removing:")
+  print(features[!features %in% rownames(so)])
+  
+  
+  features = features[features %in% rownames(so)]
+  MyDot = DotPlot(so, group.by = group.by, features = (features) )
+  
+  PctExprDF = lapply(levels(MyDot$data$id), function(xL){
+    subset(MyDot$data, id == xL)$pct.exp
+  }) %>% as.data.frame()
+  
+  rownames(PctExprDF) = features
+  colnames(PctExprDF) = levels(MyDot$data$id)
+  rowSums(PctExprDF)
+  
+  if(plot_perHM) pheatmap::pheatmap(PctExprDF)
+  
+  return(PctExprDF)
+}
+
+
 #' Make an RNA heatmap
 #' 
 #' @param seuratObj A Seurat object.
@@ -14,7 +119,14 @@
 #' @return A heatmap of RNA expression.
 #' @export
 make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit, columnsplit,
-                            size, coldendside, rowdendside, fontsize, titlefontsize, pairedList2=NULL, asGG = F){
+                            size,
+                            clus_cols = TRUE, show_column_dend = T,
+                            clus_rows=TRUE, show_row_dend = T,
+                            fontsize, titlefontsize, pairedList2=NULL, asGG = F,
+                            column_names_side = "bottom",
+                            column_dend_side = "bottom",
+                            row_names_side = "left",
+                            row_dend_side = "left"){
   avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
                                          features = markerVec,
                                          slot = 'counts', return.seurat = T,
@@ -23,31 +135,39 @@ make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit, columns
   mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
   mat <- mat %>% pheatmap:::scale_mat(scale = 'column')
   colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
-  for (nam in names(pairedList2)){
-    foundnam_pos <- grep(nam, colnames(mat))
-    rep <- pairedList2[[nam]]
-    colnames(mat)[foundnam_pos] <- rep
+  if(!is.null(pairedList2)){
+    for (nam in names(pairedList2)){
+      foundnam_pos <- grep(nam, colnames(mat))
+      rep <- pairedList2[[nam]]
+      colnames(mat)[foundnam_pos] <- rep
+    }
   }
-  col_RNA = colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
+  
+  col_RNA = circlize::colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
   # col_RNA = c(Seurat::BlueAndRed(20)[c(1,3,5,7)], Seurat::BlueAndRed(20)[c(14,16,18,20)])
   #Above emulates Seurat's BlueAndRed color scheme.
-  P1 <-
-    ComplexHeatmap::Heatmap(mat,
+  P1 <- ComplexHeatmap::Heatmap(mat,
                             width = ncol(mat)*unit(size, "mm"), 
                             height = nrow(mat)*unit(size, "mm"),
-                            row_names_side = "left",
-                            row_dend_side = rowdendside,
+                            row_names_side = row_names_side,
+                            row_dend_side = row_dend_side,,
                             column_names_rot = 45,
                             col = col_RNA,
-                            column_names_side = "bottom",
-                            column_dend_side = coldendside,
+                            column_names_side = column_names_side,
+                            column_dend_side = column_dend_side,
                             row_split = rowsplit,
                             column_split = columnsplit,
                             row_title=NULL,
-                            cluster_columns = TRUE,
                             row_names_gp = grid::gpar(fontsize = fontsize),
                             column_names_gp = grid::gpar(fontsize = fontsize),
-                            column_title = "RNA Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
+                            column_title = "RNA Markers\n", 
+                            column_title_gp = grid::gpar(fontsize = titlefontsize), 
+                            name = "Scaled Avg. Exp.",
+                            cluster_columns = clus_cols,
+                            cluster_rows = clus_rows,
+                            show_row_dend = show_row_dend, 
+                            show_column_dend = show_column_dend, 
+                            show_heatmap_legend = FALSE
     )
   
   if(asGG) {
@@ -91,19 +211,23 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
                             size = 4, column_names_rot = 45,
                             fontsize=8, titlefontsize = 12,
                             coldendside = "bottom",
+                            column_names_side = "bottom",
+                            row_names_side = "left",
+                            row_dend_side = "right",
                             asGG = T){
   
   
   mat <- asinh(scale(t(AverageExpression(seuratObj, group.by = labelColumn, features = markerVec)[[assay]])))
-  col_RNA = colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
+  col_RNA = circlize::colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
   
   P1 <-
     ComplexHeatmap::Heatmap(mat,
-                            row_names_side = "left",
-                            row_dend_side = "right",
+                            row_names_side = row_names_side,
+                            row_dend_side = row_dend_side,
                             col = col_RNA,
-                            column_names_side = "top",
-                            column_dend_side = coldendside, #"bottom",
+                            column_names_side = column_names_side,
+                            column_names_side = column_names_side,
+                            column_dend_side = column_dend_side,
                             row_split = rowsplit,
                             column_split = columnsplit,
                             width = ncol(mat)*unit(size, "mm"),
@@ -158,10 +282,24 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NU
                                 labelColumn, prefix, adtoutput = "unpaired", 
                                 rowsplit = NULL, columnsplit = NULL, 
                                 size, coldend = TRUE, rowdend = TRUE, 
-                                coldendside = "bottom", rowdendside = "left", 
-                                fontsize = 12, titlefontsize = 20, gap = 0){
+                                coldendside = "bottom", rowdendside = "left",
+                                row_names_side = "left",  column_names_side = "bottom",
+                                fontsize = 12, titlefontsize = 20, gap = 0,
+                                show_column_dend = T, show_row_dend = T){
   
-  P1 = scCustFx::make_RNA_heatmap(seuratObj, markerVec, labelColumn, rowsplit, columnsplit, size, coldendside, rowdendside, fontsize, titlefontsize, pairedList2)
+
+  
+  
+  P1 = scCustFx::make_RNA_heatmap(seuratObj = seuratObj, markerVec = markerVec, labelColumn = labelColumn, 
+                                  rowsplit = rowsplit, columnsplit=columnsplit, size=size,
+                                  clus_cols = rowdend, show_column_dend = show_column_dend,
+                                  clus_rows=coldend, show_row_dend = show_row_dend,
+                                  # coldendside=coldendside, rowdendside=rowdendside, 
+                                  fontsize = fontsize, titlefontsize = titlefontsize,  pairedList2 = pairedList2,
+                                  column_names_side = column_names_side,
+                                  column_dend_side = coldendside,
+                                  row_names_side =row_names_side,
+                                  row_dend_side = rowdendside)
   col_RNA = P1$col_RNA
   P1 = P1$plot
   
@@ -264,10 +402,10 @@ plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefonts
     x <- lab
     x
   }) %>% t()
-  col_tiss <- colorRamp2(c(min(mat), 0, max(mat)), c("purple", "white", "darkorange"))
+  col_tiss <- circlize::colorRamp2(c(min(mat), 0, max(mat)), c("purple", "white", "darkorange"))
   P1 <- ComplexHeatmap::Heatmap(
     matrix = mat, border_gp = gpar(col = "black", lty = 1),
-    col = colorRamp2(c(min(mat), 0, max(mat)), c("white", "white", "white")),
+    col = circlize::colorRamp2(c(min(mat), 0, max(mat)), c("white", "white", "white")),
     cell_fun = function(j, i, x, y, width, height, fill) {
       
       grid.circle(x = x, y = y, r = 0.5* min(unit.c(width)), #(mat_fin[i, j])/3 * min(unit.c(width, height)), 

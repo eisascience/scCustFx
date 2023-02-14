@@ -19,9 +19,13 @@ ProduceComboHeatmap(
   rowdend = TRUE,
   coldendside = "bottom",
   rowdendside = "left",
+  row_names_side = "left",
+  column_names_side = "bottom",
   fontsize = 12,
   titlefontsize = 20,
-  gap = 0
+  gap = 0,
+  show_column_dend = T,
+  show_row_dend = T
 )
 }
 \arguments{
