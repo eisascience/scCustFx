@@ -1,3 +1,98 @@
+
+
+
+
+#' barplot vectors side by side 
+#'
+#' barplot vectors side by side
+#' 
+#' @param vec1 a named vector 
+#' @param vec2 a secibd named vector 
+#' @param title title
+#' @param QuantThr color pink via quantiles
+#' @return If returnDF is `TRUE`, the plotted data frame is returned.
+#' @export
+barplot_vectors <- function(vec1, vec2, title="", QuantThr = .66) {
+  # Convert vectors to data frames
+  # CellMembrane:::.UpdateGeneModel()
+  names(vec1) =  CellMembrane::RenameUsingCD(CellMembrane:::.UpdateGeneModel(names(vec1)))
+  names(vec2) =  CellMembrane::RenameUsingCD(CellMembrane:::.UpdateGeneModel(names(vec2)))
+  
+  df1 <- data.frame(names = names(vec1), value = vec1, stringsAsFactors = FALSE)
+  df2 <- data.frame(names = names(vec2), value = vec2, stringsAsFactors = FALSE)
+  df1$col = "gray"
+  df2$col = "grey"
+  df1 = df1[order(abs(df1$value), decreasing = T),]
+  df2 = df2[order(abs(df2$value), decreasing = T),]
+  
+  
+  df1[abs(df1$value) > quantile(abs(df1$value), .66),]$col = "pink"
+  df2[abs(df2$value) > quantile(abs(df2$value), .65),]$col = "pink"
+  
+  # if(nrow(df2)>N_highlight){
+  #   df2[1:N_highlight, ]$col = "pink"
+  # }
+  # 
+  # if(nrow(df1)>N_highlight){
+  #   df1[1:N_highlight, ]$col = "pink"
+  # }
+  
+  df1$col <- factor(df1$col, levels = c("pink", "gray"))
+  df2$col <- factor(df2$col, levels = c("pink", "gray"))
+  
+  
+  
+  plot1 = ggplot(df1, aes(x = reorder(names, value), y = value, fill=col)) + 
+    geom_bar(stat = "identity") +
+    scale_y_continuous(expand = expansion(mult = c(0.1, 0.05))) +
+    geom_text(aes(label = names), position = position_stack(vjust = 0.5), color = "black") +
+    coord_flip() +
+    labs(x = NULL, y = NULL, title = title)+
+    theme_classic() +
+    theme(legend.position = "none",
+          # axis.line = element_blank(),
+          # axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          plot.title = element_blank())+
+    scale_fill_manual(values = c("pink", "gray"))
+  
+  
+  
+  
+  
+  plot2 = ggplot(df2, aes(x = reorder(names, -value), y = value, fill=col)) + 
+    geom_bar(stat = "identity") +
+    scale_y_continuous(expand = expansion(mult = c(0.1, 0.05))) +
+    geom_text(aes(label = names), position = position_stack(vjust = 0.5), color = "black") +
+    coord_flip() +
+    labs(x = NULL, y = NULL, title = title)+
+    theme_classic() +
+    theme(legend.position = "none",
+          # axis.line = element_blank(),
+          axis.line.y = element_blank(),
+          # axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          plot.title = element_blank())+
+    scale_fill_manual(values = c("pink", "gray"))
+  
+  
+  
+  wrap_plots(plot2, plot1, ncol = 2)
+  
+  # cowplot::plot_grid(plot1, plot2, title = title, ncol = 2)
+  
+  # Combine plots using patchwork
+  
+  
+}
+
+
+
 #' Plot 2D Dimensionality Reduction
 #'
 #' Plot 2D dimensional reduction of a data frame.

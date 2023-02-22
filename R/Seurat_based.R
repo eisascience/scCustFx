@@ -1,4 +1,60 @@
 
+
+
+#' scatter-bubble style of selected PCs and genes
+#'
+#'scatter-bubble style of selected PCs and genes
+#' 
+#' @param serObj a seurat obj 
+#' @param features features to show
+#' @param pcs a numeric vector of 2 pc nnumbers e.g. c(1, 2) 
+#' @param base_size base_size of plot
+#' @param quaT color pink via quantiles
+#' @return ggplot scatter-bubble plot style 
+#' @export
+plotPCgeneLoadings = function(serObj, features, pcs = c(1, 2), quaT = 0.8, base_size =10){
+  tempDF = as.data.frame(serObj@reductions$pca@feature.loadings[features, pcs])
+  colnames(tempDF) = c("Dim1", "Dim2")
+  tempDF$gene = rownames(tempDF)
+  
+  tempDF$col = "gray"
+  
+  # tempDF[abs(tempDF$Dim1) > quantile(abs(tempDF$Dim1), quaT),]$col = "pink"
+  # tempDF[abs(tempDF$Dim2) > quantile(abs(tempDF$Dim2), quaT),]$col = "pink"
+  
+  tempDF[(tempDF$Dim1) > quantile((tempDF$Dim1), quaT),]$col = "pink"
+  tempDF[(tempDF$Dim1) < quantile((tempDF$Dim1), 1-quaT),]$col = "pink"
+  
+  tempDF[(tempDF$Dim2) > quantile((tempDF$Dim2), quaT),]$col = "pink"
+  tempDF[(tempDF$Dim2) < quantile((tempDF$Dim2), 1-quaT),]$col = "pink"
+  
+  
+  tempDF$lab = ifelse(tempDF$col == "gray", "", tempDF$gene)
+  
+  tempDF$col <- factor(tempDF$col, levels = c("pink", "gray"))
+  
+  tempDF$meanW = (as.numeric(tempDF$Dim1) + as.numeric( tempDF$Dim2))/2
+  
+  ggplot(tempDF, aes(Dim1, Dim2, col=col))+
+    geom_point(aes(size = meanW)) + 
+    theme_bw(base_size = base_size) +
+    # scale_color_distiller(palette = "Spectral") +
+    theme(legend.position = "none") +
+    scale_color_manual(values = c("pink", "gray")) +
+    ggrepel::geom_text_repel(aes(label=lab), 
+                             size=4, max.overlaps =10,
+                             colour = "black",
+                             # segment.color="grey50", 
+                             nudge_y = 0.01) +
+    ggtitle("Top loaded genes")+
+    xlab(paste0("PC", pcs[1])) + ylab(paste0("PC", pcs[2]))
+  
+  
+  
+}
+
+
+
 #' Calculate the percent expressed cells for each group in a Seurat object
 #'
 #' @param serobj A Seurat object
@@ -118,23 +174,26 @@ PercentExpressed <- function(so, group.by, features, plot_perHM = F){
 #' @param asGG returns GGplot not list if true
 #' @return A heatmap of RNA expression.
 #' @export
-make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit, columnsplit,
-                            size,
+make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit=NULL, columnsplit=NULL,
+                            size=6,
                             clus_cols = TRUE, show_column_dend = T,
                             clus_rows=TRUE, show_row_dend = T,
-                            fontsize, titlefontsize, pairedList2=NULL, asGG = F,
+                            fontsize=10, titlefontsize=10, pairedList2=NULL, asGG = F,
                             column_names_side = "bottom",
                             column_dend_side = "bottom",
                             row_names_side = "left",
-                            row_dend_side = "left"){
+                            row_dend_side = "left",
+                            assays = 'RNA', useCDnames = T){
   avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
                                          features = markerVec,
                                          slot = 'counts', return.seurat = T,
-                                         assays = 'RNA')
+                                         assays = assays)
   avgSeurat <- Seurat::NormalizeData(avgSeurat)
   mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
   mat <- mat %>% pheatmap:::scale_mat(scale = 'column')
-  colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
+  
+  if(useCDnames) colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
+  
   if(!is.null(pairedList2)){
     for (nam in names(pairedList2)){
       foundnam_pos <- grep(nam, colnames(mat))
@@ -342,7 +401,8 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NU
 #' @param titlefontsize Font size for plot title.
 #' @return A heatmap of protein expression.
 #' @export
-CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, size, fontsize, titlefontsize) {
+CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, 
+                                 prefix, size, fontsize, titlefontsize) {
   print(proteinList)
   adt_columns <- proteinList # unname(unlist(pairedList))
   mat_ADT <- cbind("Label" = seuratObj@meta.data[[labelColumn]], seuratObj@meta.data[,adt_columns])

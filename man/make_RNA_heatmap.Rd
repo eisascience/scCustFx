@@ -8,21 +8,23 @@ make_RNA_heatmap(
   seuratObj,
   markerVec,
   labelColumn,
-  rowsplit,
-  columnsplit,
-  size,
+  rowsplit = NULL,
+  columnsplit = NULL,
+  size = 6,
   clus_cols = TRUE,
   show_column_dend = T,
   clus_rows = TRUE,
   show_row_dend = T,
-  fontsize,
-  titlefontsize,
+  fontsize = 10,
+  titlefontsize = 10,
   pairedList2 = NULL,
   asGG = F,
   column_names_side = "bottom",
   column_dend_side = "bottom",
   row_names_side = "left",
-  row_dend_side = "left"
+  row_dend_side = "left",
+  assays = "RNA",
+  useCDnames = T
 )
 }
 \arguments{

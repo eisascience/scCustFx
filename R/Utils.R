@@ -1,3 +1,29 @@
+#' @title similarity_overlap
+#'
+#' @description returns a jaccard similarity matrix comparing similarity overlap of character items
+#' @param VecLs, a list of character vectors
+#' @export
+similarity_overlap = function(VecLs){
+  similarity_matrix <- matrix(0, nrow = length(VecLs), ncol = length(VecLs))
+  for (i in 1:(length(VecLs)-1)) {
+    for (j in (i+1):length(VecLs)) {
+      set1 <- VecLs[[i]]
+      set2 <- VecLs[[j]]
+      intersection <- length(intersect(set1, set2))
+      union <- length(union(set1, set2))
+      jaccard_similarity <- intersection / union
+      similarity_matrix[i, j] <- jaccard_similarity
+      similarity_matrix[j, i] <- jaccard_similarity
+    }
+  }
+  if(!is.null(names(VecLs))){
+    colnames(similarity_matrix) = names(VecLs)
+    rownames(similarity_matrix) = names(VecLs)
+  }
+  
+  return(similarity_matrix)
+}
+
 #' @title is.even
 #'
 #' @description logical returns T if even
