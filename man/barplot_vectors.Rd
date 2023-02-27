@@ -2,7 +2,7 @@
 % Please edit documentation in R/Visualizations_general.R
 \name{barplot_vectors}
 \alias{barplot_vectors}
-\title{barplot_vectors side by side}
+\title{barplot vectors side by side}
 \usage{
 barplot_vectors(vec1, vec2, title = "", QuantThr = 0.66)
 }
@@ -19,5 +19,5 @@ barplot_vectors(vec1, vec2, title = "", QuantThr = 0.66)
 If returnDF is `TRUE`, the plotted data frame is returned.
 }
 \description{
-barplot side by side
+barplot vectors side by side
 }

@@ -12,6 +12,8 @@ ImputeSDA2Ser <- function(serObj, sda_loadings, keepComps=NULL, sdaObjID="", plo
   
   genes_overlap = intersect(rownames(serObj), colnames(sda_loadings))
   
+  if(is.null(keepComps))keepComps = 1:nrow(sda_loadings)
+  
   sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% serObj@assays$RNA@data[genes_overlap, ]))
   colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
 

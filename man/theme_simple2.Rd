@@ -5,7 +5,7 @@
 \alias{theme_simple2}
 \title{theme_simple remove legend, axis, and title with base size 20}
 \format{
-An object of class \code{theme} (inherits from \code{gg}) of length 94.
+An object of class \code{theme} (inherits from \code{gg}) of length 97.
 }
 \usage{
 theme_simple2
