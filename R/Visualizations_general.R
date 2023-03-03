@@ -1,5 +1,100 @@
 
 
+#' Make a GIF from plot list
+#'
+#' This function takes in a list of ggplots and makes a GIF
+#'
+#' @param plot_list list of ggplots 
+#' @param filename path and filename of gif
+#' @return saves filename gif
+#' @export
+create_gif_LS <- function(plot_list, filename = "animation.gif", delay = 100, res = 72) {
+  library(animation)
+  n_frames <- length(plot_list)
+  ani.options(interval = delay/1000, nmax = n_frames, 
+              ani.width = 600, ani.height = 400, 
+              outdir = getwd(), 
+              title = "Animation", description = "My animation")
+  
+  saveGIF({
+    for (i in 1:n_frames) {
+      print(plot_list[[i]])
+    }
+  }, movie.name = filename, res = res, loop = TRUE)
+}
+
+
+
+#' Add quadrant labels to a ggplot representing a scatterplot
+#'
+#' This function takes in a ggplot that is representing a scatterplot, a horizontal y coordinate, and a vertical x coordinate, and adds quadrant boundaries and text labels to the plot to indicate how many points are in each section of the scatterplot.
+#'
+#' @param plot ggplot object representing a scatterplot
+#' @param x horizontal y coordinate to separate the quadrants
+#' @param y vertical x coordinate to separate the quadrants
+#'
+#' @return ggplot object with quadrant boundaries and text labels added
+#' @export
+add_quadrant_labels <- function(plot, x, y) {
+  # Get data from plot
+  data <- layer_data(plot, 1)
+  
+  # Calculate quadrant boundaries
+  x_median <- x
+  y_median <- y
+  
+  # Count number of points in each quadrant
+  q1_count <- sum(data$x > x_median & data$y > y_median)
+  q2_count <- sum(data$x <= x_median & data$y > y_median)
+  q3_count <- sum(data$x <= x_median & data$y <= y_median)
+  q4_count <- sum(data$x > x_median & data$y <= y_median)
+  
+  # Calculate percentages
+  total_count <- nrow(data)
+  q1_percent <- round(q1_count / total_count * 100)
+  q2_percent <- round(q2_count / total_count * 100)
+  q3_percent <- round(q3_count / total_count * 100)
+  q4_percent <- round(q4_count / total_count * 100)
+  
+  # Get min and max values of x and y coordinates
+  maxX <- max(data$x)
+  minX <- min(data$x)
+  maxY <- max(data$y)
+  minY <- min(data$y)
+  
+  # Calculate position of text labels
+  q1_x <- mean(c(x_median, maxX))
+  q1_y <- mean(c(y_median, maxY))
+  
+  q2_x <- mean(c(minX, x_median))
+  q2_y <- mean(c(y_median, maxY))
+  
+  q3_x <- mean(c(minX, x_median))
+  q3_y <- mean(c(minY, y_median))
+  
+  q4_x <- mean(c(x_median, maxX))
+  q4_y <- mean(c(minY, y_median))
+  
+  # Add lines for quadrant boundaries
+  plot <- plot +
+    geom_vline(xintercept = x_median, linetype = "dashed") +
+    geom_hline(yintercept = y_median, linetype = "dashed")
+  
+  # Add text labels for each quadrant
+  plot <- plot +
+    annotate("text", x = q1_x, y = q1_y, 
+             label = paste0(q1_count, " (", q1_percent, "%)"), size = 4) +
+    annotate("text", x = q2_x, y = q2_y, 
+             label = paste0(q2_count, " (", q2_percent, "%)"), size = 4) +
+    annotate("text", x = q3_x, y = q3_y, 
+             label = paste0(q3_count, " (", q3_percent, "%)"), size = 4) +
+    annotate("text", x = q4_x, y = q4_y, 
+             label = paste0(q4_count, " (", q4_percent, "%)"), size = 4)
+  
+  return(plot)
+}
+
+
 
 
 #' barplot vectors side by side 

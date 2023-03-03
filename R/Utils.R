@@ -1,9 +1,83 @@
-#' @title similarity_overlap
+
+
+string_overlap <- function(df1, df2) {
+  
+  # Initialize empty matrices for gene overlap
+  overlaps1 <- matrix(0, ncol(df1), ncol(df1))
+  overlaps2 <- matrix(0, ncol(df2), ncol(df2))
+  overlaps12 <- matrix(0, ncol(df1), ncol(df2))
+  
+  # Calculate gene overlap within df1
+  for (i in 1:(ncol(df1) - 1)) {
+    for (j in (i+1):ncol(df1)) {
+      overlaps1[i,j] <- sum(df1[,i] == df1[,j])
+    }
+  }
+  
+  # Calculate gene overlap within df2
+  for (i in 1:(ncol(df2) - 1)) {
+    for (j in (i+1):ncol(df2)) {
+      overlaps2[i,j] <- sum(df2[,i] == df2[,j])
+    }
+  }
+  
+  # Calculate gene overlap between df1 and df2
+  for (i in 1:(ncol(df1) - 1)) {
+    for (j in 1:ncol(df2)) {
+      overlaps12[i,j] <- sum(df1[,i] == df2[,j])
+    }
+  }
+  
+  SumMat = overlaps1 + overlaps2 + overlaps12
+ 
+  list(df1_ol=overlaps1, df2_ol=overlaps2, , df12_ol=overlaps12)
+}
+
+#' @title similarity overlap dataframe
+#'
+#' @description returns a jaccard similarity matrix comparing similarity overlap of character items
+#' @param df,input dataframe where each column contains N genes/strings
+#' @export
+similarity_jaccard_DF <- function(df, plot=T) {
+
+  # ncol(df)
+  
+  
+  dist <- apply(expand.grid(1:ncol(df), 1:ncol(df)), 1, function(x) {
+    # print(x)
+    bayesbio::jaccardSets(df[,x[1]], df[,x[2]])
+  })
+  
+  
+  dist_df <- cbind(( expand.grid(1:ncol(df), 1:ncol(df)) ), dist)
+  
+  head(dist_df)
+  dist_df$Var1 = naturalsort::naturalfactor(paste0("v", dist_df$Var1))
+  dist_df$Var2 = naturalsort::naturalfactor(paste0("v", dist_df$Var2))
+  
+  jaccard_mat = reshape2::dcast(dist_df, Var1 ~ Var2, value.var = "dist")[,-1]
+  
+  
+  # jaccard_mat[1:5, 1:5]
+  # dim(jaccard_mat)
+  
+  colnames(jaccard_mat) = colnames(df)
+  rownames(jaccard_mat) = colnames(df)
+  
+ if(plot) pheatmap::pheatmap(jaccard_mat[,])
+  
+  return(jaccard_mat)
+}
+
+
+
+
+#' @title similarity_overlap list
 #'
 #' @description returns a jaccard similarity matrix comparing similarity overlap of character items
 #' @param VecLs, a list of character vectors
 #' @export
-similarity_overlap = function(VecLs){
+similarity_jaccard_LS = function(VecLs, plot=F){
   similarity_matrix <- matrix(0, nrow = length(VecLs), ncol = length(VecLs))
   for (i in 1:(length(VecLs)-1)) {
     for (j in (i+1):length(VecLs)) {
@@ -20,6 +94,8 @@ similarity_overlap = function(VecLs){
     colnames(similarity_matrix) = names(VecLs)
     rownames(similarity_matrix) = names(VecLs)
   }
+  
+  if(plot) pheatmap::pheatmap(jaccard_mat[,])
   
   return(similarity_matrix)
 }
