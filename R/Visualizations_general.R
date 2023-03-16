@@ -1,5 +1,135 @@
 
 
+#' Plot a word cloud from a named vector of word counts
+#'
+#' @param word_count A named vector where the names are words and the values are counts
+#' @param max.words The maximum number of words to display in the word cloud (default: 100)
+#' @param colors The color palette to use for the word cloud (default: brewer.pal(8, "Dark2"))
+#' @param min.freq The minimum frequency of a word to be included in the word cloud (default: 1)
+#'
+#' @return A plot of the word cloud
+#'
+#' @importFrom wordcloud wordcloud
+#' @importFrom RColorBrewer brewer.pal
+#' @export
+plot_wordcloud <- function(word_count, max.words = 100, colors = brewer.pal(8, "Dark2"), min.freq = 1) {
+  library(wordcloud)
+  # Convert named vector to data frame
+  word_df <- data.frame(word = names(word_count), freq = as.integer(word_count))
+  
+  # Plot word cloud
+  wordcloud(words = word_df$word, freq = word_df$freq, min.freq = min.freq,
+            max.words = max.words, random.order = FALSE, rot.per = 0.35,
+            colors = brewer.pal(8, "Dark2"))
+}
+
+
+#' Counts the overlap of items in rows per column feature
+#'
+#' This function takes in a list of ggplots and makes a GIF
+#'
+#' @param df a dataframe
+#' @return rturns a count matrix
+#' @export
+count_overlap <- function(df) {
+  overlap <- unique(unlist(df))
+  
+  count_matrix <- matrix(0, nrow = length(overlap), ncol = ncol(df), dimnames = list(overlap, colnames(df)))
+  
+  for (i in 1:ncol(df)) {
+    overlapping_genes <- intersect(overlap, df[, i])
+    count_matrix[overlapping_genes, i] <- rep(1, length(overlapping_genes))
+  }
+  return(count_matrix)
+}
+
+
+
+#' Make a GIF from plot list
+#'
+#' This function takes in a list of ggplots and makes a GIF
+#'
+#' @param count_matrix a count matrix 
+#' @param method dist or cor
+#' @return plots a network graph
+#' @export
+plot_gene_network <- function(count_matrix, method = "dist") {
+  library(igraph)
+  
+  
+  
+  # sort( rowSums(count_matrix), decreasing = T)
+  n <- nrow(count_matrix)
+  m <- ncol(count_matrix)
+  
+  if(method=="cor"){
+    ajm = round(asinh(cor(count_matrix)^4 * 10), 2)
+    
+    graph <- graph_from_adjacency_matrix(ajm, mode = "undirected", weighted = TRUE)
+    
+    
+  }
+  
+  if(method=="dist"){
+    
+    
+    # create a similarity matrix from the count matrix based on Euclidean distance
+    distance_matrix <- dist(t(count_matrix))
+    similarity_matrix <- 1 / (1 + as.matrix(distance_matrix)^2)
+    
+    ajm = round(asinh((similarity_matrix) * 10) , 2)
+    
+    # create an igraph object from the similarity matrix
+    graph <- graph_from_adjacency_matrix(, mode = "undirected", weighted = TRUE)
+    
+  }
+  # plot(graph)
+  
+  # calculate degree centrality and betweenness centrality
+  degree <- degree(graph)
+  betweenness <- betweenness(graph)
+  
+  # set node attributes based on centrality measures
+  V(graph)$label <- V(graph)$name
+  V(graph)$size <- degree 
+  V(graph)$color <- "lightblue"
+  V(graph)$frame.color <- "white"
+  V(graph)$label.color <- "black"
+  V(graph)$label.cex <- 0.8
+  V(graph)$label.family <- "Helvetica"
+  V(graph)$label.dist <- 0
+  V(graph)$label.degree <- 0
+  
+  # set edge attributes based on centrality measures
+  E(graph)$color <- "gray"
+  # E(graph)$width <- betweenness# * 2
+  
+  # set edge label attribute with edge weight
+  E(graph)$label <- E(graph)$weight
+  E(graph)$label.cex <- 0.8
+  
+  # plot the graph with layout and style adjustments
+  plot(graph,
+       layout = layout_with_fr,
+       vertex.label.color = V(graph)$label.color,
+       vertex.label.family = V(graph)$label.family,
+       vertex.label.cex = V(graph)$label.cex,
+       vertex.label.dist = V(graph)$label.dist,
+       vertex.label.degree = V(graph)$label.degree,
+       vertex.color = V(graph)$color,
+       vertex.frame.color = V(graph)$frame.color,
+       vertex.size = V(graph)$size,
+       edge.color = E(graph)$color,
+       edge.width = E(graph)$width,
+       edge.label = E(graph)$label,
+       edge.label.cex = E(graph)$label.cex
+  )
+  
+
+}
+
+
+
 #' Make a GIF from plot list
 #'
 #' This function takes in a list of ggplots and makes a GIF
