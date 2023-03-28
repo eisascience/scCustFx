@@ -3,6 +3,7 @@
 S3method(RunUMAP,Matrix)
 S3method(predict,SDA)
 export(.run_tSNE_mat)
+export(BetterViolins)
 export(Cold2Hot)
 export(ColorTheme)
 export(CreateProteinHeatmap)
