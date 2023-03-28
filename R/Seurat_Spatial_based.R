@@ -1,4 +1,34 @@
 
+
+#' process Seurat Spatial object via SCT
+#'
+#' process Seurat Spatial object via SCT
+#' 
+#' @param serObj a seurat obj 
+#' @return A Processed Seurat Obj
+#' @export
+process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial",
+                           dims=1:30, verbose = T, clusterResolutions = c(0.2, 0.4, 0.6, 0.8, 1.2)){
+  print("SCT transformation start")
+  serObj <- SCTransform(serObj, assay = assay, 
+                        ncells = ncells, # of cells used to build NB regression def is 5000
+                        verbose = verbose)
+  print("Running PCA start")
+  serObj <- RunPCA(serObj)
+  serObj <- RunTSNE(serObj, dims = dims, perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  check_duplicates = FALSE)
+  print("Running UMAP start")
+  serObj <- RunUMAP(serObj, dims = dims)
+  print("Running Clustering start")
+  serObj <- FindNeighbors(serObj, dims = dims)
+  for (resolution in clusterResolutions) {
+    serObj <- FindClusters(object = serObj, resolution = resolution, verbose = verbose)
+    serObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = serObj)
+  }
+  return(serObj)
+}
+
+
+
 #' Create a Seurat object from Spatial SlideSeq data
 #'
 #' @param dge.path path to the expression data

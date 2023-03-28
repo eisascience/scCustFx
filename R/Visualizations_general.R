@@ -334,7 +334,7 @@ plot2Dredux <- function(plotDF, centers = 8, NfeatPerClus = 10, returnDF = F, ti
   colnames(plotDF) = c("Dim1", "Dim2")
   plotDF$labs1 = rownames(plotDF)
   
-  plotDF$km = factor(kmeans(plotDF[,1:2] , centers = 8)$cluster)
+  plotDF$km = factor(kmeans(plotDF[,1:2] , centers = centers)$cluster)
   
   # group by km
   keepLabs <- plotDF %>% group_by(km) %>% 

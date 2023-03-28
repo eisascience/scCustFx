@@ -1,5 +1,20 @@
 
-
+#' Calculate gene overlap between two data frames
+#'
+#' This function takes in two data frames and calculates the gene overlap within each data frame as well as the overlap between the two data frames.
+#'
+#' @param df1 A data frame containing genes of interest.
+#' @param df2 A data frame containing genes of interest.
+#'
+#' @return A list containing three matrices:
+#' \describe{
+#' \item{\code{df1_ol}}{A matrix of gene overlap within \code{df1}.}
+#' \item{\code{df2_ol}}{A matrix of gene overlap within \code{df2}.}
+#' \item{\code{df12_ol}}{A matrix of gene overlap between \code{df1} and \code{df2}.}
+#' }
+#'
+#'
+#' @export
 string_overlap <- function(df1, df2) {
   
   # Initialize empty matrices for gene overlap
@@ -32,6 +47,8 @@ string_overlap <- function(df1, df2) {
  
   list(df1_ol=overlaps1, df2_ol=overlaps2, , df12_ol=overlaps12)
 }
+
+
 
 #' @title similarity overlap dataframe
 #'

@@ -1,31 +1,179 @@
-#' scatter-bubble style of selected PCs and genes
+
+#' BetterViolins
 #'
-#'scatter-bubble style of selected PCs and genes
-#' 
-#' @param serObj a seurat obj 
-#' @return A Processed Seurat Obj
+#' This function generates violin plots with customizable features.
+#'
+#' @param serobj a data frame or a Seurat object containing the expression data
+#' @param feature2plot a string indicating the feature to plot on the y-axis (default: "nCount_RNA")
+#' @param featuredummy a string indicating a dummy feature to plot on the x-axis (default: "nFeature_RNA")
+#' @param group.by a string indicating the grouping variable (default: "ExpID")
+#' @param downsampleN an integer indicating the number of cells to downsample to (default: 500)
+#' @param title a string indicating the title of the plot (default: "")
+#' @param ComplexPlot a boolean indicating whether to generate a complex plot or not (default: FALSE)
+#' @param log10Y a boolean indicating whether to use log10 transformation on the y-axis (default: TRUE)
+#'
+#' @return a ggplot object
 #' @export
-process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial",
-                           dims=1:30, verbose = T, clusterResolutions = c(0.2, 0.4, 0.6, 0.8, 1.2)){
-  print("SCT transformation start")
-  serObj <- SCTransform(serObj, assay = assay, 
-                        ncells = ncells, # of cells used to build NB regression def is 5000
-                        verbose = verbose)
-  print("Running PCA start")
-  serObj <- RunPCA(serObj)
-  serObj <- RunTSNE(serObj, dims = dims, perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  check_duplicates = FALSE)
-  print("Running UMAP start")
-  serObj <- RunUMAP(serObj, dims = dims)
-  print("Running Clustering start")
-  serObj <- FindNeighbors(serObj, dims = dims)
-  for (resolution in clusterResolutions) {
-    serObj <- FindClusters(object = serObj, resolution = resolution, verbose = verbose)
-    serObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = serObj)
-  }
-  return(serObj)
+BetterViolins = function(serobj=NULL, 
+                         feature2plot = "nCount_RNA", 
+                         featuredummy = "nFeature_RNA", 
+                         group.by = "ExpID", 
+                         downsampleN = 500, title="", ComplexPlot=F, log10Y=T){
+  
+  if(is.null(serobj)) stop()
+  
+  if(!ComplexPlot) downsampleN = "none" # no need to downsample since ggstatplot is slow and needs downsampling 
+  if(ComplexPlot) require(ggstatsplot)
+  
+  
+  
+  ggScat1 = FeatureScatter(serobj, feature1 =feature2plot, feature2 = featuredummy, group.by = group.by)
+  
+  plotLS = lapply(levels(ggScat1$data$colors), function(xL){
+    #xL = "T1"
+    
+    tempDF = subset(ggScat1$data[,c(feature2plot, "colors")], colors == xL)
+    
+    
+    
+    labs = reshape2::melt(tempDF) %>%
+      mutate(text = forcats::fct_reorder(colors, value)) %>%
+      group_by(variable, colors) %>%
+      summarize(mean = mean(value, na.rm = TRUE),
+                median = median(value, probs=5))
+    
+    
+    if(!ComplexPlot) {
+      
+      
+      
+      gg <- ggplot(reshape2::melt(tempDF),
+                   aes(x=colors, y=value)) +
+        # geom_jitter(color="black", aes(size=log10(value)), alpha=0.2) +
+        # geom_violin( size=0.2) +
+        geom_boxplot(color = "black", size = .2, alpha = .6) +
+        # scale_y_log10()+
+        ggrepel::geom_label_repel(data = labs, aes(colors, mean,  label=paste0("mean = ", round(mean))),
+                                  nudge_x = .15,
+                                  box.padding = 0.5,
+                                  nudge_y = 1,
+                                  segment.curvature = -0.1,
+                                  segment.ncp = 3,
+                                  segment.angle = 20) + 
+        scale_fill_viridis(discrete=TRUE) +
+        scale_color_viridis(discrete=TRUE) +
+        theme_bw() +
+        theme(
+          legend.position="none"
+        ) +
+        ggrepel::geom_label_repel(data = labs, aes(colors, median,  label=paste0("median = ", round(median))),
+                                  nudge_x = -.15,
+                                  box.padding = 0.5,
+                                  nudge_y = 1,
+                                  segment.curvature = -0.1,
+                                  segment.ncp = 3,
+                                  segment.angle = 20) + 
+        # scale_fill_viridis(discrete=TRUE) +
+        # scale_color_viridis(discrete=TRUE) +
+        theme_bw() +
+        theme(
+          legend.position="none"
+        ) +
+        coord_flip() +
+        xlab("") +
+        ylab("")
+      
+      if(log10Y) gg = gg + scale_y_log10()
+      
+    }
+    
+    if(ComplexPlot) {
+      if(!is.null(downsampleN)){
+        if(nrow(tempDF)>downsampleN){
+          tempDF = tempDF[sample(1:nrow(tempDF), downsampleN),]
+        }}
+      
+      gg <- ggbetweenstats(
+        data  = reshape2::melt(tempDF),
+        x     = colors,
+        y     = value,
+        title = "",
+        xlab = "",
+        ylab = "")
+      
+    }
+    
+    gg
+    
+    
+  })
+  
+  patchwork::wrap_plots(plotLS) + 
+    plot_annotation(
+      title = title,
+      subtitle = feature2plot,
+      caption = paste0("downsampled N=", downsampleN, ifelse(log10Y, " | log10 scale", ""))
+    )
+  
 }
 
 
+
+#' Generate a violin plot with p-values for a given feature and groupings
+#'
+#' This function takes in a single-cell object, a feature of interest, and grouping variables to generate a violin plot with p-values. The p-values are generated by a Wilcoxon rank sum test comparing the expression levels of the feature of interest between each group. By default, the plot is grouped by the "ident" column in the object, but this can be changed with the group.by parameter.
+#'
+#' @param SerObj A single-cell object, such as a Seurat object.
+#' @param feature A character string indicating the feature of interest. This should correspond to a column in the slot specified by the slot parameter.
+#' @param group.by A character string indicating the grouping variable to use for the plot. This should correspond to a column in the object.
+#' @param slot A character string indicating which slot of the Seurat object to use for the plot. Default is "data".
+#' @param assay A character string indicating which assay of the slot to use for the plot. Default is "RNA".
+#' @param colors A vector of colors to use for the plot. By default, the colors will be generated automatically.
+#' @param GrpNames A vector of group names to use for the plot. If not specified, the group names will be inferred from the group.by column in the object.
+#' @param title A character string indicating the plot title. Default is no title.
+#' @param doJitter A logical value indicating whether to add jitter to the plot. Default is TRUE.
+#'
+#' @return A ggplot object with a violin plot and p-values for each pairwise comparison.
+#' @export
+VlnPlot_pvalue <- function(SerObj, feature, group.by = "ident", slot="data", assay="RNA", 
+                           colors =col_vector, GrpNames = NULL, title="",
+                           doJitter = T){
+  
+  library(ggpubr)
+  
+  v1 <- VlnPlot(SerObj, features =feature, slot =slot, assay = assay, group.by=group.by)
+  
+  v1 <- v1$data
+  colnames(v1) = c("Feat", "Grp")
+  
+  
+  if(!is.null(GrpNames)){
+    
+    if(doJitter){
+      ggboxplot(v1, x = "Grp", y = "Feat", fill=col_vector[1:length(levels(factor(v1$Grp)))],
+                add = "jitter",
+                title = paste0("Wilcox p.value. :: ", title)) + 
+        stat_compare_means(comparisons = list(GrpNames) )
+    } else {
+      ggboxplot(v1, x = "Grp", y = "Feat", fill=col_vector[1:length(levels(factor(v1$Grp)))],
+                title = paste0("Wilcox p.value. :: ", title)) + 
+        stat_compare_means(comparisons = list(GrpNames) )
+    }
+    
+  } else {
+    if(doJitter){
+      ggboxplot(v1, x = "Grp", y = "Feat", fill=col_vector[1:length(levels(factor(v1$Grp)))],
+                add = "jitter",
+                title = paste0("Wilcox p.value. :: ", title)) 
+    } else {
+      ggboxplot(v1, x = "Grp", y = "Feat", fill=col_vector[1:length(levels(factor(v1$Grp)))],
+                title = paste0("Wilcox p.value. :: ", title)) 
+    }
+  }
+  
+  
+  
+}
 
 #' scatter-bubble style of selected PCs and genes
 #'
@@ -79,6 +227,75 @@ plotPCgeneLoadings = function(serObj, features, pcs = c(1, 2), quaT = 0.8, base_
   
 }
 
+#' Plot 3D visualization of Seurat object
+#'
+#' @param seurat_obj A Seurat object
+#' @param feature1 The name of the first feature to plot along the x-axis
+#' @param feature2 The name of the second feature to plot along the y-axis
+#' @param feature3 The name of the third feature to plot along the z-axis
+#' @param color_feature The name of the feature to use for coloring the points (optional)
+#' @param cols The color palette to use for the points (optional)
+#' @param plot_title The title of the plot (optional)
+#'
+#' @return A 3D plotly visualization of the Seurat object
+#' @export
+plot3d_seurat <- function(seurat_obj, feature1, feature2, feature3, color_feature=NULL, cols = colorRamp(c("red", "blue")), plot_title="") {
+  library(plotly)
+  
+  # Check if feature1 is a gene name or metadata name
+  if (feature1 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+    x <- seurat_obj@assays$RNA@data[feature1, ]
+  } else if (feature1 %in% colnames(seurat_obj@meta.data)) {
+    x <- seurat_obj@meta.data[, feature1]
+  } else {
+    stop(paste("Feature", feature1, "not found."))
+  }
+  
+  # Check if feature2 is a gene name or metadata name
+  if (feature2 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+    y <- seurat_obj@assays$RNA@data[feature2, ]
+  } else if (feature2 %in% colnames(seurat_obj@meta.data)) {
+    y <- seurat_obj@meta.data[, feature2]
+  } else {
+    stop(paste("Feature", feature2, "not found."))
+  }
+  
+  # Check if feature3 is a gene name or metadata name
+  if (feature3 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+    z <- seurat_obj@assays$RNA@data[feature3, ]
+  } else if (feature3 %in% colnames(seurat_obj@meta.data)) {
+    z <- seurat_obj@meta.data[, feature3]
+  } else {
+    stop(paste("Feature", feature3, "not found."))
+  }
+  
+  tempDF = data.frame(x=x, y=y, z=z)
+  
+  # Set point colors if color_feature is specified
+  if (!is.null(color_feature)) {
+    
+    if (color_feature %in% colnames(seurat_obj@meta.data)) {
+      color_vals <- seurat_obj@meta.data[, color_feature]
+      tempDF$col = as.factor(color_vals)
+      p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, color = ~col, colors = cols, type = "scatter3d", mode = "markers", marker = list(size = 2))
+    } else {
+      stop(paste("Feature", color_feature, "not found."))
+    }
+  } else {
+    # Set default color
+    p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, type = "scatter3d", mode = "markers", marker = list(size = 2))
+  }
+  
+  # Set plot title and axis labels
+  # plot_title <- paste(feature1, "vs", feature2, "vs", feature3)
+  x_axis_label <- feature1
+  y_axis_label <- feature2
+  z_axis_label <- feature3
+  
+  p <- layout(p, title = plot_title, scene = list(xaxis = list(title = x_axis_label), yaxis = list(title = y_axis_label), zaxis = list(title = z_axis_label)))
+  
+  return(p)
+}
 
 
 #' Calculate the percent expressed cells for each group in a Seurat object
