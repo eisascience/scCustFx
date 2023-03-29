@@ -227,3 +227,23 @@ RearrangeLabelsByFrequency <- function(vec) {
   }
   return(relabeled_vec)
 }
+
+
+#' Counts the overlap of items in rows per column feature
+#'
+#' This function takes in a list of ggplots and makes a GIF
+#'
+#' @param df a dataframe
+#' @return rturns a count matrix
+#' @export
+count_overlap <- function(df) {
+  overlap <- unique(unlist(df))
+  
+  count_matrix <- matrix(0, nrow = length(overlap), ncol = ncol(df), dimnames = list(overlap, colnames(df)))
+  
+  for (i in 1:ncol(df)) {
+    overlapping_genes <- intersect(overlap, df[, i])
+    count_matrix[overlapping_genes, i] <- rep(1, length(overlapping_genes))
+  }
+  return(count_matrix)
+}
