@@ -1,5 +1,56 @@
-
-
+#' Plot Minimum Spanning Tree
+#' 
+#' Plots the minimum spanning tree of a given dataset.
+#' 
+#' @param df A data frame with x and y coordinates.
+#' @param labels A vector of labels for each observation in \code{df}.
+#' 
+#' @return A plot of the minimum spanning tree.
+#' 
+#' @import igraph
+#' @import ggplot2
+#' 
+#' @examples
+#' 
+#' # create sample data
+#' set.seed(123)
+#' x <- rnorm(100)
+#' y <- rnorm(100)
+#' label <- sample(c("A", "B", "C"), 100, replace = TRUE)
+#' df <- data.frame(x = x, y = y, label = label)
+#' 
+#' # plot the minimum spanning tree
+#' plot_minimum_spanning_tree(df)
+#'
+#' @export
+plot_minium_spanning_tree <- function(df, labels=NULL){
+  
+  library(igraph)
+  library(ggplot2)
+  
+  d = dist(df)
+  g <- graph.adjacency(as.matrix(d), mode = "undirected", weighted = TRUE)
+  
+  if(is.null(labels)) labels <- df$label
+  
+  # set the node color based on class
+  node_color <- as.numeric((labels))
+  
+  mst <- minimum.spanning.tree(g)
+  
+  # plot the minimum spanning tree
+  plot(
+    mst, 
+    layout = layout_with_fr(mst), 
+    vertex.label = labels, 
+    vertex.size = 5, 
+    vertex.color = node_color,
+    edge.width = 1.5,
+    edge.color = "gray50",
+    main = "Minimum Spanning Tree of Example Data"
+  )
+  
+}
 
 #' Plot k-Nearest Neighbors Graph
 #'
