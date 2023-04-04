@@ -930,3 +930,59 @@ compressSerHD5 <- function(so = NULL, load.path = NULL, overwrite = F,
   if(returnSerObj) return(so)
   
 }
+
+#' @title scatter_plot_seurat
+#'
+#' @description create scatter plot
+#' @param seurat_obj A Seurat Object 
+#' @return ggplot
+#' @export
+scatter_plot_seurat <- function(seurat_obj, meta_feature, gene_name, x_split_value, y_split_value, 
+                                assay = "RNA", slot="counts", base_size = 11) {
+  require(broom)
+  DefaultAssay(seurat_obj) = assay
+  
+  x_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == x_split_value)
+  y_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == y_split_value)
+  
+  x_expr <- GetAssayData(seurat_obj, slot = slot)[gene_name, x_cell_ids]
+  y_expr <- GetAssayData(seurat_obj, slot = slot)[gene_name, y_cell_ids]
+  
+  downSampMin = min(c(length(x_expr), length(y_expr)))
+  
+  x_expr = sort(sample(x_expr, downSampMin, replace = F), decreasing = F)
+  y_expr = sort(sample(y_expr, downSampMin, replace = F), decreasing = F)
+  
+  
+  r_squared <- cor(x=as.numeric(x_expr), 
+                   y=as.numeric(y_expr))^2
+  if(is.na(r_squared)) r_squared = 0 
+  
+  # linear_model <- lm(as.numeric(y_expr) ~ as.numeric(x_expr))
+  # 
+  # if(nrow(summary(linear_model)$coefficients)>1){
+  #   p_value <- summary(linear_model)$coefficients[2,4]
+  # } else { 
+  #   p_value = 1
+  # }
+  # 
+  
+  
+  
+  ggplot(data.frame(x = x_expr, y = y_expr), aes(x = x, 
+                                                 y = y )) +
+    geom_jitter() +
+    geom_point(aes(col="red")) +
+    # stat_smooth(method = "lm", formula = y ~ x,geom = "smooth") +
+    geom_smooth(method = "lm", se = FALSE, col="dodgerblue", lty=3) +
+    
+    xlab(paste0(meta_feature, " = " , x_split_value))+ 
+    ylab(paste0(meta_feature, " = " , y_split_value)) + 
+    ggtitle(paste(gene_name, #ifelse(p_value <= 0.01, " : p<=0.01", " : NS"),
+                  "\nR^2 =", round(r_squared,2)#, " p=", round(p_value,5)
+    )) +
+    theme_bw(base_size = base_size) +
+    theme(legend.position="none",
+          legend.title = element_blank())
+  
+}

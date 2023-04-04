@@ -5,14 +5,20 @@
 \title{transposedt}
 \usage{
 TransposeDT(dt, varlabel = "myVar")
+
+TransposeDT(dt, varlabel = "myVar")
 }
 \arguments{
 \item{dt}{The datatable}
 }
 \value{
 A transposed data.table
+
+A transposed data.table
 }
 \description{
+Transpose a data.table
+
 Transpose a data.table
 }
 \keyword{t}

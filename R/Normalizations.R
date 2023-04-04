@@ -34,3 +34,41 @@ avgExpr_norm <- function(mat, doGlobal=T, doPerFeat = T, rm.NA = T){
   if(rm.NA) mat[is.na(mat)]=0
   
 }
+
+#' Normalize multiple matrices using quantile normalization
+#'
+#' @param matrices A list of matrices
+#' @return A list of normalized sparse matrices
+normalizeMultipleMatrices <- function(matrices) {
+  
+  require(preprocessCore)
+  
+  print("preProcessing")
+  # Concatenate matrices along columns
+  matrices_concatenated <- do.call(cbind, matrices)
+  
+  print("starting normalization")
+  # Perform quantile normalization
+  normalized_matrices_concatenated <- normalize.quantiles(matrices_concatenated)
+  
+  print("postProcessing")
+  # Get the column index for each matrix
+  indexes <- cumsum(sapply(matrices, ncol))
+  
+  # Initialize a list to store the normalized matrices
+  normalized_matrices <- vector("list", length(matrices))
+  
+  
+  # Loop over the index and create matrices
+  for (i in 1:(length(matrices))) {
+    if (i==1) {
+      normalized_matrices[[i]] <- as(normalized_matrices_concatenated[,1:indexes[i]], "sparseMatrix")
+    } else {
+      normalized_matrices[[i]] <- as(normalized_matrices_concatenated[,(indexes[i-1]+1):indexes[i]],"sparseMatrix")
+    }
+  }
+  
+  names(normalized_matrices) = names(matrices)
+  return(normalized_matrices)
+}
+

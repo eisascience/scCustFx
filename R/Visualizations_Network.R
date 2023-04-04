@@ -52,6 +52,78 @@ plot_minium_spanning_tree <- function(df, labels=NULL){
   
 }
 
+#' Plot k-Nearest Neighbors Graph with multiple lables 
+#'
+#' This function takes a dataframe that contains x and y coordinates and a label
+#' that defines the classes and makes a plot of the k-nearest neighbors graph using 
+#' Euclidean distance and the cover tree algorithm.
+#'
+#' @param df A dataframe with x and y coordinates and a label column defining the classes.
+#' @param k An integer that defines the number of nearest neighbors to consider. Default is 1.
+#' @return A plot of the k-nearest neighbors graph using ggplot2.
+#'
+#' @importFrom igraph graph_from_data_frame
+#' @importFrom ggplot2 geom_point geom_segment scale_color_discrete theme_classic
+#' @importFrom FNN get.knn
+#' @export
+plot_knn_labels <- function(df, k = 1, alpha = 0.7, algo =c("kd_tree", "cover_tree", "CR", "brute") ) {
+  
+  library(igraph)
+  library(ggplot2)
+  library(FNN)
+  
+  # create an empty list to store the edge data frames
+  edge_list <- list()
+  
+  labels = df$label
+  
+  # iterate over unique labels
+  for (label in unique(labels)) {
+    
+    # subset the data frame by label
+    df_label <- subset(df, label == label)
+    
+    # compute the k-nearest neighbors using Euclidean distance and cover tree algorithm
+    knn <- FNN::get.knn(data = df_label[, c("x", "y")], k = k, algorithm = algo[1])
+    
+    # get the coordinates
+    coords <- data.frame(x = df_label$x, y = df_label$y)
+    coords$label = df_label$label
+    # extract the nearest neighbor indices
+    nn_index <- knn$nn.index
+    
+    # create a data frame with edges between nearest neighbors
+    edges <- data.frame(from = nn_index[, 1], to = nn_index[, 2])
+    
+    # append the label to the edges data frame
+    edges$label <- label
+    
+    # append the edges data frame to the edge list
+    edge_list[[length(edge_list) + 1]] <- edges
+  }
+  
+  # combine all edges in the edge_list
+  edges_all <- do.call(rbind, edge_list)
+  
+  # merge coordinates for the "from" nodes
+  edges_all <- merge(edges_all, coords, by.x = "from", by.y = "row.names")
+  
+  # merge coordinates for the "to" nodes
+  edges_all <- merge(edges_all, coords, by.x = "to", by.y = "row.names", suffixes = c("_from", "_to"))
+  
+  # plot all edges together with ggplot2
+  ggplot(df, aes(x = x, y = y)) +
+    geom_point(aes(color = factor(label)), alpha = alpha) +
+    geom_segment(data = edges_all, aes(x = x_from, y = y_from, 
+                                       xend = x_to, yend = y_to, 
+                                       color = factor(label)), alpha = alpha) +
+    theme_classic()# +
+    #scale_color_discrete(name = "Label")
+}
+
+
+
+
 #' Plot k-Nearest Neighbors Graph
 #'
 #' This function takes a dataframe that contains x and y coordinates and a label

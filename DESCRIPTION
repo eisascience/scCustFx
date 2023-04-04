@@ -30,6 +30,7 @@ Imports:
     wesanderson,
     circlize,
     tidyr,
+    ggfortify,
     ComplexHeatmap
 Suggests:
     ggvis,

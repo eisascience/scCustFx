@@ -1,4 +1,42 @@
 
+#' @title PlotHistDensOptima
+#' @description This function plots histogram+density and finds all optima from a df usually from FetchData() of Seurat. 
+#' @param dftemp, a dataframe with column var1 to be plotted. 
+#' @param col_vector, color vector.
+#' @param nn, a color from color_vector.
+#' @return plot with ggplot tabulated bar plots. 
+#' @export
+PlotHistDensOptima <- function(dftemp, Print = F, col_vector = col_vector, nn = NULL, Title = ""){
+  dens <- density(dftemp$var1, n = 1000)
+  peaks <- dens$x[find_peaks(dens$y, m=20)]
+  dips <- dens$x[find_peaks(-1*dens$y, m=20)]
+  
+  if(is.null(nn)) nn=1
+  
+  
+  p1 <- ggplot(dftemp, aes(x=var1)) + 
+    geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth = 0.05) +
+    geom_density(alpha=.2, fill=col_vector[nn]) +
+    geom_vline(aes(xintercept=mean(var1)), color="blue", linetype="dashed", size=.5) +
+    geom_vline(aes(xintercept=mean(var1) - 2*sd(var1)), color="dodgerblue", linetype="dashed", size=.5) +
+    geom_vline(aes(xintercept=mean(var1) + 2*sd(var1)), color="dodgerblue", linetype="dashed", size=.5) +
+    geom_vline(aes(xintercept=peaks[1] ), color="plum", size=.8) +
+    geom_vline(aes(xintercept=dips[1] ), color="red", size=1)  +
+    theme_bw() + ggtitle(Title)
+  
+  
+  if((length(peaks) >= 2)) p1 <- p1 + geom_vline(aes(xintercept=peaks[2] ), color="plum", size=.8)
+  if((length(peaks) >= 3)) p1 <- p1 + geom_vline(aes(xintercept=peaks[3] ), color="plum", size=.8)
+  if((length(peaks) >= 4)) p1 <- p1 + geom_vline(aes(xintercept=peaks[4] ), color="plum", size=.8)
+  
+  if((length(dips) >= 2)) p1 <- p1 + geom_vline(aes(xintercept=dips[2] ), color="brown", size=.8)
+  if((length(dips) >= 3)) p1 <- p1 + geom_vline(aes(xintercept=dips[3] ), color="brown", size=.8)
+  if((length(dips) >= 4)) p1 <- p1 + geom_vline(aes(xintercept=dips[4] ), color="brown", size=.8)
+  
+  if(Print) print(p1) else return(p1)
+}
+
+
 
 #' Plot a word cloud from a named vector of word counts
 #'

@@ -197,6 +197,22 @@ LogAdd <- function(x) {
 }
 
 
+#' Find the closest multiple of 10 to a given number.
+#'
+#' This function takes a numeric input \code{x} and returns the closest multiple of 10 to \code{x}.
+#'
+#' @param x a numeric input.
+#' @return the closest multiple of 10 to \code{x}.
+#' @examples
+#' closest_1_0s(12345)
+#' closest_1_0s(6.75)
+#' @export
+closest_1_0s <- function(x) {
+  n <- floor(log10(x))+1 #number of digits
+  closest_value <- round(x/10^(n-1))*10^(n-1)
+  return(closest_value)
+}
+
 #' @title UniformSampleDF_FacPor
 #'
 #' @description uniformly sample a dataframe based on factor and porportion
@@ -246,4 +262,77 @@ count_overlap <- function(df) {
     count_matrix[overlapping_genes, i] <- rep(1, length(overlapping_genes))
   }
   return(count_matrix)
+}
+
+
+#' @title frac_to_numeric
+#' @description Converts fraction to numeric
+#' @return A vector
+#' @keywords numeric
+frac_to_numeric <- function(x) sapply(x, function(x) eval(parse(text=x)))
+
+
+
+#' @title transposedt
+#'
+#' @description Transpose a data.table
+#' @return A transposed data.table
+#' @keywords transpose, t
+#' @param dt The datatable
+#' @import data.table
+TransposeDT <- function(dt, varlabel="myVar") {
+  dtrows = names(dt)
+  dtcols = as.list(c(dt[,1]))
+  dtt = transpose(dt)
+  dtt[, eval(varlabel) := dtrows]
+  setnames(dtt, old = names(dtt), new = c(dtcols[[1]], eval(varlabel)))
+  dtt = dtt[-1,]
+  setcolorder(dtt, c(eval(varlabel), names(dtt)[1:(ncol(dtt) - 1)]))
+  return(dtt)
+}
+
+
+#' @title UniformSampleDF_FacPor
+#'
+#' @description uniformly sample a dataframe based on factor and porportion
+#' @return index of the uniformly sampled samples
+#' @keywords sample, uniform
+UniformSampleDF_FacPor <- function(x, ClassF, p){
+  nr <- NROW(x)
+  size <- (nr * p) %/% length(unique(ClassF))
+  idx <- lapply(split(seq_len(nr), ClassF), function(.x) sample(.x, size))
+  unlist(idx)
+}
+
+
+#' @title WichIn1not2
+#'
+#' @description compares unique association between two labels from A dataftrame usually from GO annotation with a column named cluster
+#' @return unique genes to the comparison
+#' @keywords cluster, gene, 
+WichIn1not2 <- function(Clus1N = c(1), DataT = "", Clus2N = c(2)){
+  Gs1 <- subset(DataT, cluster %in% Clus1N)$gene 
+  Gs2 <- subset(DataT, cluster %in% Clus2N)$gene
+  Gs1[which(!Gs1 %in% Gs2)]
+  
+}
+
+
+#' @title find_peaks
+#' @description Returns the maxima of points. To get minima, -1*x
+#' @param x, A vector of numbers, if small or not very smooth, use a smoothing function. Like density(x).
+#' @param m, An integer that acts as a loose hand for resolution.
+#' @return vector of peaks positions.
+find_peaks <- function (x, m = 4){
+  #https://github.com/stas-g/findPeaks
+  shape <- diff(sign(diff(x, na.pad = FALSE)))
+  pks <- sapply(which(shape < 0), FUN = function(i){
+    z <- i - m + 1
+    z <- ifelse(z > 0, z, 1)
+    w <- i + m + 1
+    w <- ifelse(w < length(x), w, length(x))
+    if(all(x[c(z : i, (i + 2) : w)] <= x[i + 1])) return(i + 1) else return(numeric(0))
+  })
+  pks <- unlist(pks)
+  pks
 }
