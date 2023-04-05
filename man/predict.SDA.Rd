@@ -4,7 +4,7 @@
 \alias{predict.SDA}
 \title{Predict using SDA}
 \usage{
-predict.SDA(new.data, sda.model, return_cell_score = T)
+\method{predict}{SDA}(new.data, sda.model, return_cell_score = T)
 }
 \arguments{
 \item{new.data}{a matrix containing new data to be predicted}

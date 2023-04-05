@@ -1,4 +1,67 @@
 
+#' Plot a scatter plot with smoothed lines for selected features
+#'
+#' This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SortByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
+#'
+#' @param seuratObj A Seurat object to plot.
+#' @param SortByName The name of the variable to use for sorting cells on the x-axis.
+#' @param Feats A vector of feature names to plot on the y-axis. Default is NULL, which will plot all features in the object.
+#' @param base_size Base size of points and lines. Default is 20.
+#'
+#' @return A ggplot object.
+#'
+#' @examples
+#' Plot_Pseudotime_V_Gene(seuratObj, "nCount_RNA", c("TNFRSF4", "CD69"))
+#'
+#' @export
+Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size = 20) {
+  
+  if(is.null(Feats)) stop("Enter values for Feats")
+  
+  tempDF = FetchData(seuratObj, SortByName)
+  tempDF$orig.ord = 1:nrow(tempDF)
+  tempDF = tempDF[order(tempDF[,1], decreasing = T), , drop=F]
+  tempDF$ord = 1:nrow(tempDF)
+  
+  baseColnames = colnames(tempDF)
+  
+  if(length(Feats) == 1){
+    
+    tempDF = cbind(tempDF, GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
+    
+  } else if(length(Feats) > 1){
+    
+    tempDF = cbind(tempDF, Matrix::as.matrix(t(GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])))
+    
+    colnames(tempDF) = c(baseColnames, Feats)
+    
+  }
+  
+  head(tempDF)
+  
+  # Create smoothed lines for each item in Feat
+  tempDF_long <- tidyr::pivot_longer(tempDF, cols = Feats)
+  
+  ggplot(tempDF_long, aes(x = ord, y = value, color = name)) +
+    # geom_point() +
+    geom_smooth(method = "auto", se = TRUE, level = 0.95) +
+    # geom_smooth(method = "loess", se = TRUE, level = 0.95) +
+    #uses the quadratic to fit a line
+    # geom_smooth(method = "lm", formula = y ~ poly(x, 4), se = TRUE, level = 0.95) +
+    scale_color_discrete(name = "Feature") + 
+    theme_bw(base_size = base_size) + 
+    ggtitle(SortByName) + 
+    xlab("ordered score high -> low") + 
+    ylab ("Gene Expression")
+  
+  
+  
+  
+  
+}
+
+
+
 #' BetterViolins
 #'
 #' This function generates violin plots with customizable features.
