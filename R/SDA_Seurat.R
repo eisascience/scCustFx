@@ -8,7 +8,7 @@
 #' @param plot to plot or not 
 #' @return seurat obj with new SDA score comps in metadata
 #' @export
-ImputeSDA2Ser <- function(serObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F){
+ImputeSDA2Ser <- function(serObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T){
   
   genes_overlap = intersect(rownames(serObj), colnames(sda_loadings))
   
@@ -17,7 +17,11 @@ ImputeSDA2Ser <- function(serObj, sda_loadings, keepComps=NULL, sdaObjID="", plo
   sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% serObj@assays$RNA@data[genes_overlap, ]))
   colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
 
-  serObj = AddMetaData(serObj, as.data.frame(asinh(sda_scores)))
+  if(doAsinh) {
+    serObj = AddMetaData(serObj, as.data.frame(asinh(sda_scores)))
+  } else {
+    serObj = AddMetaData(serObj, as.data.frame(sda_scores))
+  }
   
   if(plot){
     print(Seurat::FeaturePlot(serObj, features = colnames(sda_scores), order = T) & 

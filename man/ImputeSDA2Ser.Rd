@@ -4,7 +4,14 @@
 \alias{ImputeSDA2Ser}
 \title{This function to add imputed scores from gene loading}
 \usage{
-ImputeSDA2Ser(serObj, sda_loadings, keepComps = NULL, sdaObjID = "", plot = F)
+ImputeSDA2Ser(
+  serObj,
+  sda_loadings,
+  keepComps = NULL,
+  sdaObjID = "",
+  plot = F,
+  doAsinh = T
+)
 }
 \arguments{
 \item{serObj}{A seurat Object, with assay RNA and slot data}

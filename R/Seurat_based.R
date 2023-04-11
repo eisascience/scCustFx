@@ -7,6 +7,10 @@
 #' @param SortByName The name of the variable to use for sorting cells on the x-axis.
 #' @param Feats A vector of feature names to plot on the y-axis. Default is NULL, which will plot all features in the object.
 #' @param base_size Base size of points and lines. Default is 20.
+#' @param col_vector color vector
+#' @param showScatter boolean default T to show scatter points
+#' @param dowsampleScatter boolean default T to downsample the scatter points
+#' @param scatterAlpha alpha value default 0.5 to show scatter points
 #'
 #' @return A ggplot object.
 #'
@@ -14,7 +18,8 @@
 #' Plot_Pseudotime_V_Gene(seuratObj, "nCount_RNA", c("TNFRSF4", "CD69"))
 #'
 #' @export
-Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size = 20) {
+Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size = 20, col_vector=col_vector,
+                                   showScatter = T, dowsampleScatter = T, scatterAlpha = 0.5) {
   
   if(is.null(Feats)) stop("Enter values for Feats")
   
@@ -24,6 +29,7 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   tempDF$ord = 1:nrow(tempDF)
   
   baseColnames = colnames(tempDF)
+  # head(tempDF)
   
   if(length(Feats) == 1){
     
@@ -37,25 +43,59 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
     
   }
   
-  head(tempDF)
+  # head(tempDF)
   
   # Create smoothed lines for each item in Feat
-  tempDF_long <- tidyr::pivot_longer(tempDF, cols = Feats)
+  tempDF_long <- reshape2::melt(tempDF, 
+                                id.vars = baseColnames, 
+                                measure.vars = Feats)
+  head(tempDF_long)
   
-  ggplot(tempDF_long, aes(x = ord, y = value, color = name)) +
-    # geom_point() +
-    geom_smooth(method = "auto", se = TRUE, level = 0.95) +
-    # geom_smooth(method = "loess", se = TRUE, level = 0.95) +
-    #uses the quadratic to fit a line
-    # geom_smooth(method = "lm", formula = y ~ poly(x, 4), se = TRUE, level = 0.95) +
-    scale_color_discrete(name = "Feature") + 
+  gg1 = ggplot(tempDF_long, aes(x = sqrt(ord), y = value, color = variable))
+  
+  if(showScatter) {
+    if(dowsampleScatter){
+      gg1 = gg1 + geom_point(data = tempDF_long %>% sample_frac(0.2), alpha = scatterAlpha)
+    } else {
+      gg1 = gg1 + geom_point(alpha = scatterAlpha)
+    }
+  }
+  
+  gg1 + geom_smooth(method = "auto", se = TRUE, level = 0.95) +
+    scale_color_manual(values = col_vector, name = "Feature")+
     theme_bw(base_size = base_size) + 
     ggtitle(SortByName) + 
-    xlab("ordered score high -> low") + 
+    xlab("Sqrt-ordered score high -> low") + 
     ylab ("Gene Expression")
   
   
   
+  # # Create a factor variable with 3 bins
+  # tempDF_long2 <- tempDF_long #%>% mutate(ord_bin = cut(sqrt(ord), breaks = 3, labels = c("A", "B", "C")))
+  # 
+  # # Create a factor variable with 3 bins based on the order variable
+  # tempDF_long2$bin <- cut(tempDF_long2$ord, breaks = 3, labels = c("A", "B", "C"), include.lowest = TRUE)
+  # 
+  # tempDF_long2 = subset(tempDF_long2, value > 0)
+  # 
+  # # tempDF_long2$value = exp(tempDF_long2$value )^2
+  # 
+  # library(ggpubr)
+  # # Add pairwise comparisons p-value
+  # my_comparisons <- list(c("A", "B"), c("B", "C"), c("A", "C"))
+  # 
+  # 
+  # # Create a box plot with colored segments
+  # ggboxplot(tempDF_long2, x = "bin", y = "value", color = "variable", 
+  #                        palette = col_vector,#  c("#E69F00", "#56B4E9", "#009E73"),
+  #                        ggtheme = theme_classic()) +
+  #   ggtitle("Gene Expression by Score Bins") +
+  #   xlab("Score Bins") +
+  #   ylab("Gene Expression") #+ 
+  #  # stat_compare_means(comparisons = my_comparisons, method = "wilcox.test",
+  #  #                              label = "p.signif"
+  #  #                              #label.y = max(tempDF_long$value) * 1.05
+  #  #                              )
   
   
 }
