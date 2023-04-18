@@ -49,7 +49,7 @@ PlotFeatThrTab <- function(SeuratObj, FeatName = NULL, CutThresh = NULL, PlotBar
     
     p1 <- cowplot::plot_grid(
       ggplot(tempDF, aes(x=var1)) + 
-        geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth = .03) +
+        geom_histogram(aes(y=after_stat(density)), colour="black", fill="white", binwidth = .03) +
         geom_density(alpha=.2, fill="#E69F00") + theme_bw() + 
         geom_vline(aes(xintercept=CutThresh ),
                    color="blue", linetype="dashed", size=1) +

@@ -23,7 +23,7 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   
   if(is.null(Feats)) stop("Enter values for Feats")
   
-  tempDF = FetchData(seuratObj, SortByName)
+  tempDF = Seurat::FetchData(seuratObj, SortByName)
   tempDF$orig.ord = 1:nrow(tempDF)
   tempDF = tempDF[order(tempDF[,1], decreasing = T), , drop=F]
   tempDF$ord = 1:nrow(tempDF)
@@ -33,11 +33,11 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   
   if(length(Feats) == 1){
     
-    tempDF = cbind(tempDF, GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
+    tempDF = cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
     
   } else if(length(Feats) > 1){
     
-    tempDF = cbind(tempDF, Matrix::as.matrix(t(GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])))
+    tempDF = cbind(tempDF, Matrix::as.matrix( Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)]) ) )
     
     colnames(tempDF) = c(baseColnames, Feats)
     

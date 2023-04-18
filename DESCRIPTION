@@ -11,9 +11,6 @@ LazyData: true
 Depends:
     R (>= 3.5.0)
 Imports:
-    Seurat,
-    SeuratDisk,
-    Rlabkey,
     data.table,
     dplyr,
     tidyr,
@@ -22,16 +19,16 @@ Imports:
     ggplot2,
     cowplot,
     knitr,
-    Hmisc,
     RColorBrewer,
     stringr,
     ggbeeswarm,
     wesanderson,
-    circlize,
     tidyr,
-    ggfortify,
-    ComplexHeatmap
+    ggfortify
 Suggests:
+    Seurat,
+    SeuratDisk,
+    Rlabkey,
     CellMembrane,
     monocle,
     org.Hs.eg.db,
@@ -53,6 +50,8 @@ Suggests:
     ggrastr,
     rmdformats,
     igraph,
+    circlize,
+    Hmisc,
     testthat (>= 2.1.0)
 Remotes:
     bimberlabinternal/CellMembrane,

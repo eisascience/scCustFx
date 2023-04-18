@@ -1,3 +1,42 @@
+#' Save a patchwork of ggplot figures to a file
+#'
+#' This function takes a list of ggplot figures and saves them as a patchwork to a file specified by a base path and filename, split into multiple files if the list is longer than a given split N.
+#'
+#' @param ggLS A list of ggplot figures.
+#' @param basepath The base path for the output file.
+#' @param filename The name of the output file, not including any extension.
+#' @param splitN The number of ggplots to include in each patchwork file (default is 20).
+#' @param width The width of the output file in inches (default is 12).
+#' @param height The height of the output file in inches (default is 7).
+#' @param units The units of the output file (default is "in").
+#' @param dpi The resolution of the output file in dots per inch (default is 150).
+#'
+#' @importFrom patchwork wrap_plots
+#' @importFrom ggplot2 ggsave
+#'
+#' @examples
+#' ## Save a list of ggplot figures to a file
+#' my_ggplots <- list(ggplot(data = mtcars, aes(x = mpg, y = wt)) + geom_point(),
+#'                    ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) + geom_point())
+#' save_ggplot_list(ggLS = my_ggplots, basepath = "/path/to/file", filename = "my_ggplots")
+#'
+#' @export
+save_ggplot_list = function(ggLS, basepath, filename, splitN = 20, width = 12, height = 7, units = "in", dpi = 150) {
+  n_plots <- length(ggLS)
+  n_patches <- ceiling(n_plots / splitN)
+  
+  for (i in 1:n_patches) {
+    start_idx <- (i - 1) * splitN + 1
+    end_idx <- min(i * splitN, n_plots)
+    patch <- patchwork::wrap_plots(ggLS[start_idx:end_idx], ncol = 5)
+    patch_filename <- file.path(basepath, sprintf("%s_%02d.png", filename, i))
+    ggsave(filename = patch_filename, plot = patch, width = width, height = height, units = units, dpi = dpi)
+  }
+}
+
+
+
+
 
 #' @title PlotHistDensOptima
 #' @description This function plots histogram+density and finds all optima from a df usually from FetchData() of Seurat. 
