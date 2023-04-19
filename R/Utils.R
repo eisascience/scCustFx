@@ -1,4 +1,28 @@
 
+
+#' Check if a value falls within a distribution range defined by a set of numbers
+#'
+#' This function checks if a value falls within the distribution range defined by a set
+#' of numbers, represented by the minimum and maximum values of the set.
+#'
+#' @param value The value to be checked
+#' @param my_set A set of numbers defining the distribution range
+#'
+#' @return A logical value, TRUE if the value falls within the distribution range, FALSE otherwise
+#'
+#' @examples
+#' my_set <- c(10, 20, 30, 40, 50)
+#' is_in_range(25, my_set)
+#'
+#' @export
+is_in_range <- function(value, my_set) {
+  min_val <- min(my_set)
+  max_val <- max(my_set)
+  return(value >= min_val && value <= max_val)
+}
+
+
+
 #' Calculate gene overlap between two data frames
 #'
 #' This function takes in two data frames and calculates the gene overlap within each data frame as well as the overlap between the two data frames.
