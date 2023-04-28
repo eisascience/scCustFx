@@ -106,12 +106,15 @@ SDAScoreMeta2Reduction <- function(seuratObj,
 #' @param seuratObj A Seurat object containing SDA scores to use for the reduction.
 #' @param componentNames a vector of meta features, the first is the tabulation meta the rest are sda scores... e.g. componentNames = c("ClusterNames_0.4", sdaComps[1:10])
 #' @param direction direction to inspect
+#' @param sdThr threshold to show sd on col labs default 0.2
+#' @param doASINH boolean to do asinh transformation of residuals or not default F
 #'
 #' @return a complex heatmap
 #' @export
 Plot_SDAScoresPerFeature_ser <- function (seuratObj, 
                                           componentNames, 
-                                          direction = "Both") 
+                                          direction = "Both", doASINH = F,
+                                          sdThr = 0.2) 
 {
   # componentNames = c("ClusterNames_0.4", sdaComps[1:10])
   
@@ -136,8 +139,11 @@ Plot_SDAScoresPerFeature_ser <- function (seuratObj,
     }
     
     CompsDF <- as.data.frame(lapply(lvl, function(CondX) {
-      apply(SDAScores[rownames(MetaDF)[which(MetaDF[, 1, 
-                                                    drop = TRUE] == CondX)], , drop = FALSE], 2, 
+      
+      cellIDs = rownames(MetaDF)[which(MetaDF[, 1, 
+                                              drop = TRUE] == CondX)]
+      
+      apply(SDAScores[cellIDs, 2:ncol(SDAScores), drop = FALSE], 2, 
             function(x) {
               if (direction == "Neg") {
                 round(sum(x < 0)/nrow(SDAScores) * 100, 2)
@@ -150,7 +156,7 @@ Plot_SDAScoresPerFeature_ser <- function (seuratObj,
                             direction))
               }
             })
-    }))[-1,]
+    }))
     
     colnames(CompsDF) <- levels(factor(MetaDF[, 1]))
     CompsDF <- as.data.frame(CompsDF[naturalsort::naturalsort(rownames(CompsDF)), 
@@ -167,9 +173,11 @@ Plot_SDAScoresPerFeature_ser <- function (seuratObj,
     ChiTres[which(is.na(ChiTres))] <- 0
     ChiResSD <- round(apply(ChiTres, 1, sd), 2)
     ChiResSD[which(is.na(ChiResSD))] <- 0
-    ChiResSD[ChiResSD < 0.2] <- ""
+    ChiResSD[ChiResSD < sdThr ] <- ""
     
-    HM <- ComplexHeatmap::Heatmap((t(ChiTres)), name = direction, 
+    if(doASINH) plotM = asinh(t(ChiTres)) else plotM = asinh(t(ChiTres))
+    
+    HM <- ComplexHeatmap::Heatmap(plotM, name = direction, 
                                   column_title = paste0("Direction: ", direction), 
                                   cluster_columns = TRUE, cluster_rows = TRUE, 
                                   col = (grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, 

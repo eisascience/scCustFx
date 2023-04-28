@@ -4,7 +4,13 @@
 \alias{Plot_SDAScoresPerFeature_ser}
 \title{Plot a heatmap of tabulation of SDA score vs meta}
 \usage{
-Plot_SDAScoresPerFeature_ser(seuratObj, componentNames, direction = "Both")
+Plot_SDAScoresPerFeature_ser(
+  seuratObj,
+  componentNames,
+  direction = "Both",
+  doASINH = F,
+  sdThr = 0.2
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object containing SDA scores to use for the reduction.}
@@ -12,6 +18,10 @@ Plot_SDAScoresPerFeature_ser(seuratObj, componentNames, direction = "Both")
 \item{componentNames}{a vector of meta features, the first is the tabulation meta the rest are sda scores... e.g. componentNames = c("ClusterNames_0.4", sdaComps[1:10])}
 
 \item{direction}{direction to inspect}
+
+\item{doASINH}{boolean to do asinh transformation of residuals or not default F}
+
+\item{sdThr}{threshold to show sd on col labs default 0.2}
 }
 \value{
 a complex heatmap

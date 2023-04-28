@@ -1,4 +1,90 @@
 
+
+#' Plot Violin Plots of Gene Expression by Group
+#' 
+#' @param seuratObj A Seurat object containing the data to plot.
+#' @param Feature The name of the feature to plot.
+#' @param group.by The name of the metadata field to group cells by.
+#' @param NumFeatName The name of the variable containing the number of features for each cell. If provided, cells with a number of features greater than the median will be excluded from the plot.
+#' @param cutGT  If TRUE (default), cells with a number of features greater than the median will be excluded from the plot. If FALSE, cells with a number of features less than or equal to the median will be excluded from the plot.
+#' @param ThrCut  The threshold for feature filtering. Cells with a value in the sdaCompName column greater than this threshold will be excluded from the plot. Default is 0, which will skip this step.
+#' @param GrpFacLevels  The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.
+#' @param comparisons  A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.
+#' @param xlab (Optional) The x-axis label.
+#' @param ylab (Optional) The y-axis label.
+#' @param palette  The color palette to use for the plot.
+#' @param addJitter  If TRUE, jitter points will be added to the plot. Default is FALSE.
+#' 
+#' @return A ggplot object.
+#' 
+#' 
+#' @export
+plot_violin_wFeatFilter <- function(seuratObj, Feature, group.by, 
+                                    NumFeatName = NULL, 
+                                    cutGT = T,
+                                    ThrCut = 0, 
+                                    GrpFacLevels=NULL,
+                                    comparisons = NULL, xlab="", ylab="", 
+                                    palette = col_vector, addJitter = F) {
+  
+  
+  v1 <- Seurat:::VlnPlot(seuratObj, 
+                         features = Feature, 
+                         group.by = group.by, flip = T) 
+  
+  scoreDF <- seuratObj[[NumFeatName]]
+  
+  if(cutGT) {
+    KeepCells <- scoreDF[scoreDF[,1] > ThrCut, , drop=F] %>% rownames()
+  } else {
+    KeepCells <- scoreDF[scoreDF[,1] < ThrCut, , drop=F] %>% rownames()
+    
+  }
+  
+  v1 <- v1$data[KeepCells,]
+  colnames(v1) <- c("Feat", "Grp")
+  
+  if (!is.null(GrpFacLevels)) {
+    v1$Grp <- factor(as.character(v1$Grp), levels = GrpFacLevels)
+  }
+  # nrow(v1)
+  
+  
+  if(addJitter) {
+    ggv <- ggpubr::ggviolin(v1, x = "Grp", y = "Feat",
+                            fill = "Grp", palette = palette,
+                            add = "jitter",
+                            add.params = list(size = .005, alpha = 0.05),
+                            title = paste0(Feature, "\nWilcox p."))
+  } else {
+    ggv <- ggpubr::ggviolin(v1, x = "Grp", y = "Feat",
+                            fill = "Grp", palette = palette,
+                            # add = "jitter",
+                            add.params = list(size = .005, alpha = 0.05),
+                            title = paste0(Feature, "\nWilcox p."))
+  }
+  
+  
+  if(!is.null(comparisons)){
+    ggv = ggv + ggpubr::stat_compare_means(label = "p.signif",
+                                           comparisons =
+                                             comparisons )
+  }
+  
+  ggv = ggv + xlab(xlab) + ylab(ylab) + 
+    theme_classic(base_size = 14) +
+    theme(legend.position = "right",
+          axis.text.x = ggplot2::element_text(angle = 45, vjust = 1.05, hjust=1))
+  
+  return(ggv)
+}
+
+
+
+
+
+
+
 #' Plot a scatter plot with smoothed lines for selected features
 #'
 #' This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SortByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
@@ -662,6 +748,100 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
   
 }
 
+#' Produce Combo Heatmap From Matrix
+#'
+#' This function produces a combination heatmap from a matrix using Seurat object.
+#'
+#' @param seuratObj A Seurat object containing the single-cell RNA-seq data.
+#' @param mat A matrix object containing the data for generating the heatmap.
+#' @param markerVec A vector of marker genes to be used for generating the heatmap.
+#' @param pairedList A list of paired conditions for the first set of markers.
+#' @param pairedList2 A list of paired conditions for the second set of markers.
+#' @param labelColumn A column name or index in the metadata of seuratObj to be used as labels for the heatmap.
+#' @param prefix A prefix for the output file name.
+#' @param adtoutput Output type for ADT features. Default is "unpaired".
+#' @param rowsplit A vector of row splits for the heatmap.
+#' @param columnsplit A vector of column splits for the heatmap.
+#' @param size Size of the heatmap. Default is NULL.
+#' @param coldend A logical value indicating whether to add dendrogram on the columns. Default is TRUE.
+#' @param rowdend A logical value indicating whether to add dendrogram on the rows. Default is TRUE.
+#' @param coldendside A character value specifying the side to place the column dendrogram. Default is "bottom".
+#' @param rowdendside A character value specifying the side to place the row dendrogram. Default is "left".
+#' @param fontsize Font size for the heatmap labels. Default is 12.
+#' @param titlefontsize Font size for the title of the heatmap. Default is 14.
+#' @param gap Gap between the heatmaps. Default is 0.
+#'
+#' @return A combo heatmap plot.
+#' @export
+ProduceComboHeatmapFromMatrix <- function(seuratObj, mat, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 14, gap = 0){
+  
+  library(circlize)
+  
+  mat <- mat %>% pheatmap:::scale_mat(scale = 'row') %>% as.data.frame() %>% filter(rownames(mat) %in% markerVec)
+  colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
+  mat <- t(as.matrix(mat)) %>% as.data.frame()
+  for (nam in names(pairedList2)){
+    foundnam_pos <- grep(nam, colnames(mat))
+    rep <- pairedList2[[nam]]
+    colnames(mat)[foundnam_pos] <- rep
+  }
+  
+  col_RNA = circlize::colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
+  # col_RNA = c(Seurat::BlueAndRed(20)[c(1,3,5,7)], Seurat::BlueAndRed(20)[c(14,16,18,20)])
+  #Above emulates Seurat's BlueAndRed color scheme.
+  fullorder <- rownames(mat)
+  P1 <-
+    ComplexHeatmap::Heatmap(mat,
+                            width = ncol(mat)*unit(size, "mm"), 
+                            height = nrow(mat)*unit(size, "mm"),
+                            row_names_side = "left",
+                            row_dend_side = rowdendside,
+                            column_names_rot = 45,
+                            col = col_RNA,
+                            column_names_side = "bottom",
+                            column_dend_side = coldendside,
+                            row_split = rowsplit,
+                            column_split = columnsplit,
+                            row_title=NULL,
+                            cluster_columns = TRUE,
+                            row_names_gp = grid::gpar(fontsize = fontsize),
+                            column_names_gp = grid::gpar(fontsize = fontsize),
+                            column_title = "RNA Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
+    )
+  
+  
+  
+  # P2 <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn)
+  if (adtoutput == "unpaired"){
+    res <- CreateProteinHeatmap(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+    P2 <- res[[1]]
+    col_ADT <- res[[2]]
+  } else {
+    res <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    
+  }
+  
+  
+  res2 <- plotEnrichment(seuratObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+  P3 <- res2[[1]]
+  col_tiss <- res2[[2]]
+  plotlist <- P1 + P2 + P3
+  # draw(plotlist, ht_gap = unit(0, "mm"))
+  lgd1 <- Legend(title = "Scaled Avg. Exp.", col_fun = col_RNA, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  lgd2 <- Legend(title = "Scaled Avg. ADT", col_fun = col_ADT, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  lgd3 <- Legend(title = "Tissue Enrichment", col_fun = col_tiss, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  pd = packLegend(lgd1, lgd2, lgd3, direction = "vertical")
+  draw(P1)
+  draw(P2)
+  draw(P3)
+  draw(plotlist, heatmap_legend_list = pd, ht_gap = unit(gap,"mm"), heatmap_legend_side = "right")
+  
+}
+
+
 #' Produce a combination heatmap
 #' 
 #' @param seuratObj A seurat object
@@ -683,7 +863,211 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
 #' @param gap Gap between panels (default: 0)
 #' @return A list of differentially expressed genes
 #' @export
-ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NULL, 
+ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 20, gap = 0){
+  avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+                                         features = markerVec,
+                                         slot = 'data', return.seurat = T,
+                                         assays = 'RNA')
+  # avgSeurat <- Seurat::NormalizeData(avgSeurat)
+  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
+  mat <- mat %>% pheatmap:::scale_mat(scale = 'column') %>% as.data.frame()
+  colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
+  for (nam in names(pairedList2)){
+    foundnam_pos <- grep(nam, colnames(mat))
+    rep <- pairedList2[[nam]]
+    colnames(mat)[foundnam_pos] <- rep
+  }
+  col_RNA = circlize::colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
+  # col_RNA = c(Seurat::BlueAndRed(20)[c(1,3,5,7)], Seurat::BlueAndRed(20)[c(14,16,18,20)])
+  #Above emulates Seurat's BlueAndRed color scheme.
+  fullorder <- rownames(mat)
+  P1 <-
+    ComplexHeatmap::Heatmap(mat,
+                            width = ncol(mat)*unit(size, "mm"), 
+                            height = nrow(mat)*unit(size, "mm"),
+                            row_names_side = "left",
+                            row_dend_side = rowdendside,
+                            column_names_rot = 45,
+                            col = col_RNA,
+                            column_names_side = "bottom",
+                            column_dend_side = coldendside,
+                            row_split = rowsplit,
+                            column_split = columnsplit,
+                            row_title=NULL,
+                            cluster_columns = TRUE,
+                            row_names_gp = grid::gpar(fontsize = fontsize),
+                            column_names_gp = grid::gpar(fontsize = fontsize),
+                            column_title = "RNA Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
+    )
+  
+  # P2 <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn)
+  if (adtoutput == "unpaired"){
+    res <- CreateProteinHeatmap(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+    P2 <- res[[1]]
+    col_ADT <- res[[2]]
+  } else {
+    res <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    
+  }
+  
+  
+  res2 <- plotEnrichment(seuratObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+  P3 <- res2[[1]]
+  col_tiss <- res2[[2]]
+  plotlist <- P1 + P2 + P3
+  # draw(plotlist, ht_gap = unit(0, "mm"))
+  lgd1 <- Legend(title = "Scaled Avg. Exp.", col_fun = col_RNA, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  lgd2 <- Legend(title = "Scaled Avg. ADT", col_fun = col_ADT, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  lgd3 <- Legend(title = "Tissue Enrichment", col_fun = col_tiss, direction = "horizontal", title_gp = gpar(fontsize = 10),
+                 labels_gp = gpar(fontsize = 8))
+  pd = packLegend(lgd1, lgd2, lgd3, direction = "vertical")
+  draw(P1)
+  draw(P2)
+  draw(P3)
+  draw(plotlist, heatmap_legend_list = pd, ht_gap = unit(gap,"mm"), heatmap_legend_side = "right")
+}
+
+#' Create a protein heatmap
+#' 
+#' @param seuratObj A Seurat object.
+#' @param proteinList A list of proteins to plot.
+#' @param labelColumn Column name to use for labeling rows.
+#' @param prefix Prefix for plot title.
+#' @param size Size of plot.
+#' @param fontsize Font size for labels.
+#' @param titlefontsize Font size for plot title.
+#' @param fullorder 
+#' @return A heatmap of protein expression.
+#' @export
+CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, size, fontsize, titlefontsize, fullorder) {
+  print(proteinList)
+  adt_columns <- proteinList # unname(unlist(pairedList))
+  mat_ADT <- cbind("Label" = seuratObj@meta.data[[labelColumn]], seuratObj@meta.data[,adt_columns])
+  colnames(mat_ADT) <- gsub(paste0(prefix, "."), "", colnames(mat_ADT))
+  colnames(mat_ADT) <- gsub("_UCell_pos", "", colnames(mat_ADT)) %>% as.factor()
+  colnames(mat_ADT) <- gsub("\\.", "-", colnames(mat_ADT)) %>% as.factor()
+  
+  
+  colordering <- colnames(mat_ADT)
+  mat_ADT <- mat_ADT %>% pivot_longer(cols = 2:length(mat_ADT), names_to = "ADT") %>% group_by(Label, ADT) %>% summarize(avg = mean(value)) %>% pivot_wider(id_cols = Label, names_from = "ADT", values_from = "avg") %>% as.data.frame()
+  
+  colordering_mat <- colordering[-1]
+  
+  
+  
+  mat_ADT <- mat_ADT[,colordering]
+  rownames(mat_ADT) <- mat_ADT$Label
+  mat_ADT <- mat_ADT %>% select(-Label)
+  mat_ADT <- mat_ADT[fullorder,]
+  
+  rowordering <- rownames(mat_ADT)
+  avgSeuratADT <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+                                            slot = 'data', return.seurat = T,
+                                            assays = prefix)
+  # avgSeuratADT <- Seurat::NormalizeData(avgSeuratADT)
+  mat <- t(as.matrix(avgSeuratADT@assays[[prefix]]@data)) %>% pheatmap:::scale_mat(scale = 'column') %>% as.data.frame()
+  
+  mat <- mat[,colnames(mat) %in% colnames(mat_ADT)]
+  mat <- mat[fullorder,]
+  mat <- mat[,colordering_mat]
+  
+  col_ADT = circlize::colorRamp2(c(min(mat), 0, max(mat)), c("white", "gray85", "blue"))
+  
+  print(mat)
+  print(mat_ADT)
+  
+  P2 <- Heatmap(as.matrix(mat_ADT), name = "Scaled\nAvg. ADT", col = col_ADT, rect_gp = gpar(type="none"), border_gp = gpar(col = "black", lty = 1), show_row_dend = FALSE, show_column_dend = FALSE, width = ncol(mat)*unit(size, "mm"), 
+                height = nrow(mat)*unit(size, "mm"), column_names_gp = grid::gpar(fontsize = fontsize), row_names_gp = grid::gpar(fontsize = fontsize),
+                cell_fun = function(j, i, x, y, width, height, fill) {
+                  grid.circle(x = x, y = y, r = (mat_ADT[i,j])* min(unit.c(width)/2), #(mat_fin[i, j])/3 * min(unit.c(width, height)), 
+                              gp = gpar(fill = col_ADT(mat[i, j]), col = NA))
+                }, cluster_rows = TRUE, cluster_columns = FALSE,
+                column_names_side = "bottom",
+                column_dend_side = NULL,
+                column_names_rot = 45,
+                row_dend_side = NULL,
+                column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), column_title = "Surface\nProtein",
+                show_row_names = FALSE, show_column_names = TRUE, show_heatmap_legend = FALSE, row_split = NULL)
+  print(P2)
+  return(list(P2, col_ADT))
+}
+
+
+#' Plot Enrichment 
+#' 
+#' @param seuratObj A Seurat object.
+#' @param field1 Field 1 to compare.
+#' @param field2 Field 2 to compare.
+#' @param size Size of plot.
+#' @param fontsize Font size for labels.
+#' @param titlefontsize Font size for plot title.
+#' @param fullorder 
+#' @return A plot of enrichment analysis between two fields.
+#' @export
+plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefontsize, fullorder) {
+  mat <- asinh(chisq.test(table(seuratObj[[field1]][[field1]], seuratObj[[field2]][[field2]]))$res) %>% as.matrix()  
+  mat <- mat[fullorder,]
+  
+  rowLabels <- apply(mat, 1, function(x){
+    # ToDo:
+    lab = ifelse(x >= 0.9 * max(x), "***", ifelse(x >= 0.75 * max(x), "**", ifelse(x >= max(x) * .5, "*", "")))
+    x <- lab
+    x
+  }) %>% t()
+  col_tiss <- colorRamp2(c(min(mat), 0, max(mat)), c("purple", "white", "darkorange"))
+  P1 <- ComplexHeatmap::Heatmap(
+    matrix = mat, border_gp = gpar(col = "black", lty = 1),
+    col = colorRamp2(c(min(mat), 0, max(mat)), c("white", "white", "white")),
+    cell_fun = function(j, i, x, y, width, height, fill) {
+      
+      grid.circle(x = x, y = y, r = 0.1, #* min(unit.c(width)), #(mat_fin[i, j])/3 * min(unit.c(width, height)), 
+                  gp = gpar(fill = col_tiss(mat[i, j]), col = "white"))
+      grid.text(rowLabels[i, j], x, y)
+    },
+    row_names_gp = grid::gpar(fontsize = fontsize),
+    column_names_rot = 45,
+    column_names_gp = grid::gpar(fontsize = fontsize),
+    width = ncol(mat)*unit(size, "mm"), 
+    height = nrow(mat)*unit(size, "mm"),
+    column_names_side = "bottom",
+    column_dend_side = "bottom",
+    column_title = "Tissue\nEnrichment", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), show_row_dend = FALSE, show_column_dend = FALSE,
+    show_row_names = FALSE, show_heatmap_legend = FALSE,
+    name = "Tissue\nEnrichment"
+  )
+  
+  
+  P1
+  return(list(P1, col_tiss))  
+}
+
+
+
+
+#' Produce a combination heatmap old ver
+#' 
+#' @param seuratObj A seurat object
+#' @param markerVec A vector of markers
+#' @param pairedList A list of paired data
+#' @param pairedList2 A second list of paired data
+#' @param labelColumn Column name for sample labels
+#' @param prefix Prefix for output file names
+#' @param adtoutput Output type (default: "unpaired")
+#' @param rowsplit Split data by row (default: NULL)
+#' @param columnsplit Split data by column (default: NULL)
+#' @param size Plot size
+#' @param coldend Show dendrogram for columns (default: TRUE)
+#' @param rowdend Show dendrogram for rows (default: TRUE)
+#' @param coldendside Side to place column dendrogram (default: "bottom")
+#' @param rowdendside Side to place row dendrogram (default: "left")
+#' @param fontsize Font size (default: 12)
+#' @param titlefontsize Title font size (default: 20)
+#' @param gap Gap between panels (default: 0)
+#' @return A list of differentially expressed genes
+#' @export
+ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList2=NULL, 
                                 labelColumn, prefix, adtoutput = "unpaired", 
                                 rowsplit = NULL, columnsplit = NULL, 
                                 size, coldend = TRUE, rowdend = TRUE, 
@@ -709,16 +1093,16 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NU
   P1 = P1$plot
   
   if (adtoutput == "unpaired"){
-    P2 <- scCustFx::CreateProteinHeatmap(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize)
+    P2 <- scCustFx::CreateProteinHeatmap.old(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize)
     col_ADT <- P2[[2]]
     P2 <- P2[[1]]
   } else {
-    P2 <- scCustFx::CreatePairedHeatmap(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    P2 <- scCustFx::CreatePairedHeatmap.old(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
     
   }
   
   
-  P3 <- scCustFx::plotEnrichment(seuratObj, field1 = labelColumn, field2 = 'Tissue', 
+  P3 <- scCustFx::plotEnrichment.old(seuratObj, field1 = labelColumn, field2 = 'Tissue', 
                                  size, fontsize = fontsize, titlefontsize = titlefontsize,
                                  column_title = "Tissue\nEnrichment")
   col_tiss <- P3[[2]]
@@ -736,7 +1120,7 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NU
   draw(plotlist, heatmap_legend_list = pd, ht_gap = unit(gap,"mm"), heatmap_legend_side = "right")
 }
 
-#' Create a protein heatmap
+#' Create a protein heatmap old ver
 #' 
 #' @param seuratObj A Seurat object.
 #' @param proteinList A list of proteins to plot.
@@ -747,7 +1131,7 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2=NU
 #' @param titlefontsize Font size for plot title.
 #' @return A heatmap of protein expression.
 #' @export
-CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, 
+CreateProteinHeatmap.old <- function(seuratObj, proteinList, labelColumn, 
                                  prefix, size, fontsize, titlefontsize) {
   print(proteinList)
   adt_columns <- proteinList # unname(unlist(pairedList))
@@ -799,7 +1183,7 @@ CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn,
 #' @param column_title Column title for plot.
 #' @return A plot of enrichment analysis between two fields.
 #' @export
-plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefontsize, column_title) {
+plotEnrichment.old <- function(seuratObj, field1, field2, size, fontsize, titlefontsize, column_title) {
   mat <- asinh(chisq.test(table(seuratObj[[field1]][[field1]], seuratObj[[field2]][[field2]]))$res) %>% as.matrix()  
   
   rowLabels <- apply(mat, 1, function(x){
