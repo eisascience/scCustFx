@@ -1,4 +1,76 @@
 
+#' BiSplit_DE
+#'
+#' A function to perform differential expression analysis using BiSplit algorithm.
+#'
+#' @param SerObject An object of class Seurat
+#' @param gate_feat A character vector of feature names to use as gatekeepers for the BiSplit algorithm.
+#' @param gate_thr The threshold value for the gatekeepers. Default is 0.
+#' @param plot_DimPlot Logical value indicating whether to generate a DimPlot of the results. Default is FALSE.
+#' @param doDE set doDE to F from T (default) when just visualizing the gating dimplot
+#' @param cols A character vector of colors to use for plotting the results. Default is c("gray", "red").
+#' @param raster Logical value indicating whether to rasterize the plot. Default is FALSE.
+#' @param assay The assay type to use for the analysis. Default is "RNA".
+#' @param slot The slot to use for the analysis. Default is "data".
+#' @param only.pos Logical value indicating whether to only consider positive differential expression. Default is FALSE.
+#' @param min.pct The minimum percentage of cells expressing a feature to consider it. Default is 0.65.
+#' @param min.diff.pct The minimum percentage difference in expression between groups to consider a feature differentially expressed. Default is 0.2.
+#' @param logfc.threshold The log-fold change threshold to use for identifying differentially expressed features. Default is 0.25.
+#'
+#' @return A DF containing the results of the differential expression analysis.
+#'
+#' @export
+BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0, 
+                       plot_DimPlot = F, doDE = T,
+                       cols = c("gray", "red"), raster = F, 
+                                assay = "RNA", slot = "data",
+                                only.pos = F, min.pct = 0.65, min.diff.pct = 0.2,
+                                logfc.threshold = 0.25){
+  
+  if(is.null(gate_feat)) stop("gate_feat is null")
+  
+  SerObject$DE_bool = ifelse(SerObject[[gate_feat]] >= 0, "R", "L") #right or left of
+  
+  
+  if(plot_DimPlot) {
+    print(DimPlot(SerObject, group.by = "DE_bool",
+                  cols = cols, 
+                  label = F, label.size = 6, repel = T, raster = raster) + NoLegend())
+    
+  } else {
+    if(!doDE) {
+      print("plot_DimPlot is F doDE = F :: setting plot_DimPlot = T")
+      print(DimPlot(SerObject, group.by = "DE_bool",
+                    cols = cols, 
+                    label = F, label.size = 6, repel = T, raster = raster) + NoLegend())
+    }
+   
+    
+  }
+  
+  if(doDE) {
+    DefaultAssay(SerObject)  = assay
+    Idents(SerObject) = "DE_bool"
+    
+    
+    DEgenes_unsupclusts = FindMarkers(SerObject,
+                                      logfc.threshold = logfc.threshold,
+                                      ident.1 = "R",
+                                      ident.2 = "L",
+                                      test.use = "wilcox", 
+                                      slot = slot,
+                                      min.pct = min.pct, min.diff.pct = min.diff.pct,
+                                      only.pos = only.pos)
+    
+    DEgenes_unsupclusts$PctDiff <- abs(DEgenes_unsupclusts$pct.1 - DEgenes_unsupclusts$pct.2)
+    
+    return(DEgenes_unsupclusts)
+  }
+  
+  
+}
+
+
 
 #' Plot Violin Plots of Gene Expression by Group
 #' 

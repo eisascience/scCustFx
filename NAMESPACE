@@ -3,6 +3,7 @@
 S3method(RunUMAP,Matrix)
 S3method(predict,SDA)
 export(BetterViolins)
+export(BiSplit_DE)
 export(Cold2Hot)
 export(ColorTheme)
 export(CommonLoadingSDAMat)
