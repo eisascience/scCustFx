@@ -10,8 +10,9 @@ plot3d_seurat(
   feature2,
   feature3,
   color_feature = NULL,
-  cols = colorRamp(c("red", "blue")),
-  plot_title = ""
+  cols = colorRamp(c("navy", "red")),
+  plot_title = "",
+  slot = "data"
 )
 }
 \arguments{

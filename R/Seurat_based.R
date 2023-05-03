@@ -1,4 +1,103 @@
 
+#' Perform unsupervised clustering and UMAP reduction 
+#'
+#' This function performs unsupervised clustering on single-cell RNA-seq data and then it does the Uniform Manifold Approximation and Projection (UMAP) dimensionality reduction method. It returns and updated seurat object.
+#'
+#' @param SerObject A Seurat obj
+#' @param Feats A vector of character strings specifying which features to use for clustering. If NULL, all features are used.
+#' @param reduction The type of dimensionality reduction to apply. If NULL, no reduction is applied. Options are "PCA", "TSNE", "UMAP", or "none".
+#' @param dims The number of dimensions to use for the reduction. If NULL, the default number of dimensions for the chosen method is used.
+#' @param resolution The UMAP resolution parameter.
+#' @param verbose A boolean indicating whether to print progress updates during the clustering process.
+#' @param random.seed The random seed to use for reproducibility.
+#' @param doUMAP Logical if F unsupervised clustering is only done default (T)
+#' @param doClust Logical if F unsupervised clustering is only done default (T)
+#' @param n.neighbors The number of neighbors to use for UMAP construction.
+#' @param n.components The number of umap components default 2, or 3 or try 1
+#' @param n.epochs The number of epochs to use for UMAP construction.
+#' @param min.dist The minimum distance between UMAP points.
+#' @param spread The spread parameter for UMAP.
+#' @param reduction.key A character string specifying the prefix for the output object names.
+#'
+#' @return seurat obj
+#'
+#' @export
+UnsupClust_UMAP_proc <- function(SerObject, 
+                                 doClust = T,
+                                 Feats = NULL, #character names
+                                 reduction = NULL,
+                                 dims = NULL, #numeric 
+                                 resolution = 0.4, 
+                                 verbose = F,
+                                 random.seed = 1234,
+                                 doUMAP = T, 
+                                 n.components = 2,
+                                 n.neighbors = 60, n.epochs = 300,
+                                 min.dist = 0.2, spread = 1,
+                                 reduction.key = 'UMAPCust_'){
+  if(!doClust & !doUMAP ) stop("choose something to do cluster or umap")
+  
+  if(doClust){
+    print("Finding Neighbors")
+    SerObject <- FindNeighbors(SerObject, 
+                               reduction = reduction, 
+                               dims = dims, 
+                               verbose = verbose)
+    
+    print("Finding Clusters")
+    SerObject <- FindClusters(object = SerObject,
+                              resolution = resolution,
+                              verbose = verbose,
+                              random.seed = random.seed)
+    
+    print("Updating Ser Obj with:")
+    print(paste0("ClusterNames", reduction, "_", resolution))
+    
+    SerObject[[paste0("ClusterNames", reduction, "_", resolution)]] <- Idents(object = SerObject)
+    
+  }
+  
+  
+  
+  if(doUMAP){
+    UMAPDF = scCustFx:::RunUMAP.Matrix(DGEmat = SerObject@meta.data[, Feats],
+                                       n_threads = 8,
+                                       assay = NULL,
+                                       n.neighbors = n.neighbors, #40
+                                       n.components = n.components,
+                                       metric = "cosine",
+                                       n.epochs = n.epochs,
+                                       learning.rate = 1.0,
+                                       min.dist = min.dist,
+                                       spread = spread,
+                                       set.op.mix.ratio = 1.0,
+                                       local.connectivity = 1L,
+                                       repulsion.strength = 1,
+                                       negative.sample.rate = 5,
+                                       a = NULL,
+                                       b = NULL,
+                                       seed.use = random.seed,
+                                       metric.kwds = NULL,
+                                       angular.rp.forest = FALSE,
+                                       reduction.key = reduction.key,
+                                       verbose = TRUE)
+    
+    
+    obID = paste0("umap_", reduction, "keep")
+    
+    
+    
+    SerObject[[obID]] = Seurat::CreateDimReducObject(
+      embeddings = UMAPDF, 
+      key = paste0(tolower(gsub("_", "", obID)), "_"), 
+      assay = NULL, global = TRUE)
+  }
+  
+  
+  return(SerObject)
+  
+}
+
 #' BiSplit_DE
 #'
 #' A function to perform differential expression analysis using BiSplit algorithm.
@@ -527,35 +626,45 @@ plotPCgeneLoadings = function(serObj, features, pcs = c(1, 2), quaT = 0.8, base_
 #'
 #' @return A 3D plotly visualization of the Seurat object
 #' @export
-plot3d_seurat <- function(seurat_obj, feature1, feature2, feature3, color_feature=NULL, cols = colorRamp(c("red", "blue")), plot_title="") {
+plot3d_seurat <- function(seurat_obj, 
+                          feature1, feature2, feature3, 
+                          color_feature=NULL, 
+                          cols = colorRamp(c("navy", "red")), 
+                          plot_title="", slot = "data") {
   library(plotly)
   
+  
+  
   # Check if feature1 is a gene name or metadata name
-  if (feature1 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-    x <- seurat_obj@assays$RNA@data[feature1, ]
-  } else if (feature1 %in% colnames(seurat_obj@meta.data)) {
-    x <- seurat_obj@meta.data[, feature1]
-  } else {
-    stop(paste("Feature", feature1, "not found."))
-  }
+  # if (feature1 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+  #   x <- seurat_obj@assays$RNA@data[feature1, ]
+  # } else if (feature1 %in% colnames(seurat_obj@meta.data)) {
+  #   x <- seurat_obj@meta.data[, feature1]
+  # } else {
+  #   stop(paste("Feature", feature1, "not found."))
+  # }
+  x = FetchData(SerObject, feature1, slot = slot)[,1]
   
   # Check if feature2 is a gene name or metadata name
-  if (feature2 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-    y <- seurat_obj@assays$RNA@data[feature2, ]
-  } else if (feature2 %in% colnames(seurat_obj@meta.data)) {
-    y <- seurat_obj@meta.data[, feature2]
-  } else {
-    stop(paste("Feature", feature2, "not found."))
-  }
+  # if (feature2 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+  #   y <- seurat_obj@assays$RNA@data[feature2, ]
+  # } else if (feature2 %in% colnames(seurat_obj@meta.data)) {
+  #   y <- seurat_obj@meta.data[, feature2]
+  # } else {
+  #   stop(paste("Feature", feature2, "not found."))
+  # }
+  y = FetchData(SerObject, feature2, slot = slot)[,1]
   
   # Check if feature3 is a gene name or metadata name
-  if (feature3 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-    z <- seurat_obj@assays$RNA@data[feature3, ]
-  } else if (feature3 %in% colnames(seurat_obj@meta.data)) {
-    z <- seurat_obj@meta.data[, feature3]
-  } else {
-    stop(paste("Feature", feature3, "not found."))
-  }
+  # if (feature3 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
+  #   z <- seurat_obj@assays$RNA@data[feature3, ]
+  # } else if (feature3 %in% colnames(seurat_obj@meta.data)) {
+  #   z <- seurat_obj@meta.data[, feature3]
+  # } else {
+  #   stop(paste("Feature", feature3, "not found."))
+  # }
+  z = FetchData(SerObject, feature3, slot = slot)[,1]
+  
   
   tempDF = data.frame(x=x, y=y, z=z)
   
@@ -567,7 +676,11 @@ plot3d_seurat <- function(seurat_obj, feature1, feature2, feature3, color_featur
       tempDF$col = as.factor(color_vals)
       p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, color = ~col, colors = cols, type = "scatter3d", mode = "markers", marker = list(size = 2))
     } else {
-      stop(paste("Feature", color_feature, "not found."))
+      GeneExpr = FetchData(SerObject, color_feature, slot = slot)[,1]
+      p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, 
+                   color = ~GeneExpr, colors = cols, 
+                   type = "scatter3d", mode = "markers", marker = list(size = 2))
+      
     }
   } else {
     # Set default color
