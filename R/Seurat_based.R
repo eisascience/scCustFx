@@ -1,4 +1,126 @@
 
+#' Get feature windows
+#'
+#' This function generates feature windows for a given feature and groups in a Seurat object.
+#'
+#' @param SerObject A Seurat object.
+#' @param feat A character vector representing the feature name.
+#' @param group.by A character vector representing the group to use for grouping the data.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{winDF}{A table with the counts of cells falling into each window, for each group.}
+#'   \item{vlines}{A numeric vector with the vertical lines representing the boundaries of each window.}
+#' }
+#'
+#'
+#' @export
+getFeatWindows <- function(SerObject, feat, group.by){
+  
+  
+  
+  v1 <- Seurat:::VlnPlot(SerObject, features = feat, group.by = group.by, flip = T) #timepoint
+  
+  v1 <- v1$data
+  colnames(v1) = c("Feat", "Grp")
+  
+  # v1$Grp = factor(as.character(v1$Grp), levels = c("PBMC_Baseline", "PBMC_Peak", "LN_Baseline", "LN_Peak"))
+  
+  tmpTbl = table(cut(v1$Feat, c(min(v1$Feat),
+                                # round(mean(v1$Feat) - 2*sd(v1$Feat), 2),
+                                round(mean(v1$Feat) - sd(v1$Feat), 2),
+                                round(mean(v1$Feat), 2),
+                                round(mean(v1$Feat) + sd(v1$Feat), 2),
+                                # round(mean(v1$Feat) + 2*sd(v1$Feat), 2),
+                                max(v1$Feat))), v1$Grp)
+  
+  if(any(rowSums(tmpTbl)==0)){
+    
+    if(abs(round(min(v1$Feat), 2)) - abs(round(mean(v1$Feat) - sd(v1$Feat), 2)) < 0.5){
+      tmpTbl = table(cut(v1$Feat, c(min(v1$Feat),
+                                    # round(mean(v1$Feat) - 2*sd(v1$Feat), 2),
+                                    # round(mean(v1$Feat) - sd(v1$Feat), 2),
+                                    round(mean(v1$Feat), 2),
+                                    # ThrX,
+                                    round(mean(v1$Feat) + sd(v1$Feat), 2),
+                                    round(mean(v1$Feat) + 2*sd(v1$Feat), 2),
+                                    max(v1$Feat))), v1$Grp)
+    } else {
+      tmpTbl = table(cut(v1$Feat, c(min(v1$Feat),
+                                    # round(mean(v1$Feat) - 2*sd(v1$Feat), 2),
+                                    round(mean(v1$Feat) - sd(v1$Feat), 2),
+                                    round(mean(v1$Feat), 2),
+                                    # ThrX,
+                                    round(mean(v1$Feat) + sd(v1$Feat), 2),
+                                    # round(mean(v1$Feat) + 2*sd(v1$Feat), 2),
+                                    max(v1$Feat))), v1$Grp)
+    }
+    
+    
+    
+  }
+  
+  if(any(rowSums(tmpTbl)==0)){
+    
+    tmpTbl = table(cut(v1$Feat, c(min(v1$Feat),
+                                  round(mean(v1$Feat) - 2*sd(v1$Feat), 2),
+                                  round(mean(v1$Feat) - sd(v1$Feat), 2),
+                                  round(mean(v1$Feat), 2),
+                                  # ThrX,
+                                  # round(mean(v1$Feat) + sd(v1$Feat), 2),
+                                  # round(mean(v1$Feat) + 2*sd(v1$Feat), 2),
+                                  max(v1$Feat))), v1$Grp)
+  }
+  
+  vlines = lapply( strsplit(rownames(tmpTbl), ","), function(x){
+    c(as.numeric(gsub("\\(", "", x[1])),
+      as.numeric(gsub("\\]", "", x[2])))
+  }) %>% unlist() %>% unique()
+  
+  return(list(winDF = tmpTbl, vlines = vlines))
+  
+}
+
+
+
+#' Generate a FeaturePlot_cust which is a scatter plot with gene expression as color scale
+#'
+#' This function generates a scatter plot of the specified dimensions (features) of a Seurat object,
+#' colored by expression values of the specified feature.
+#'
+#' @param SerObject A Seurat object containing the data to plot
+#' @param dim1 Name of the first feature to plot on the x-axis
+#' @param dim2 Name of the second feature to plot on the y-axis
+#' @param pt.size Point size for the plot (default: 1)
+#' @param group.by Name of the grouping variable for the plot (optional)
+#' @param Feat Name of the feature to use for coloring the plot
+#' @param colors Vector of colors for the color gradient (default: c('white', 'gray', 'gold', 'red', 'maroon'))
+#' @param base_size Base font size for the plot (default: 14)
+#'
+#' @return A ggplot object
+#' 
+#' @export
+FeaturePlot_cust <- function(SerObject, dim1, dim2, pt.size = 1, 
+                             group.by, Feat, colors=c('white', 'gray', 'gold', 'red', 'maroon'), 
+                             base_size = 14) {
+  
+  gg1 <- suppressMessages(Seurat::FeatureScatter(SerObject, feature1 = dim1, 
+                                                 feature2 = dim2, 
+                                                 group.by = group.by))
+  
+  
+  gg1$data$GeneExpr <- FetchData(SerObject, Feat, slot = "data")[rownames(gg1$data), 1]
+  
+  gg1$data <- gg1$data[order(gg1$data$GeneExpr, decreasing = F), ]
+  
+  ggplot(gg1$data, aes(x = .data[[dim1]], y = .data[[dim2]], color = GeneExpr)) +
+    geom_point(size = pt.size) + 
+    theme_classic(base_size = base_size) +
+    scale_colour_gradientn(colours = colors) + 
+    ggtitle(Feat)
+  
+}
+
 #' Perform unsupervised clustering and UMAP reduction 
 #'
 #' This function performs unsupervised clustering on single-cell RNA-seq data and then it does the Uniform Manifold Approximation and Projection (UMAP) dimensionality reduction method. It returns and updated seurat object.
