@@ -1,3 +1,47 @@
+
+#' Gene overlap across components
+#'
+#' Given a set of genes and a dataframe of gene expression values across multiple components, this function computes the number of overlapping genes in the top \code{Ngenes} of each component with the input gene set. 
+#'
+#' @param GeneSet a character vector of gene names to compare across the components
+#' @param compDF a data.frame object containing gene expression values across components, where each column corresponds to a component and each row to a gene
+#' @param Ngenes the number of genes to consider in the top overlap
+#' @param verbose a boolean indicating whether to print the top found genes for each component
+#'
+#' @return A named list of length equal to the length of the input \code{GeneSet}, where each element of the list is a numeric vector of length equal to the number of components in \code{compDF} representing the number of overlapping genes in the top \code{Ngenes} of each component with the input gene set.
+#' 
+#'
+#' @export
+GeneOverlapAcrossComps  = function(GeneSet, compDF, Ngenes = 10, verbose = T){
+
+  tempLS = lapply(GeneSet, function(xG){
+    # xG = GeneSet[6]
+    
+    
+    TopFound = lapply(compDF, function(gS){
+      sum(any(xG %in% as.character(gS[1:Ngenes])))
+    }) %>% unlist()
+    
+    
+    if(verbose){
+      
+      TopFoundDF = as.data.frame(cbind(Top_Pos, Top_Neg)[1:10,names(TopFound[TopFound>0])]); TopFoundDF
+      
+      print(TopFoundDF)
+    }
+    
+ 
+    comp2show = names(TopFound[TopFound>0]);
+    
+    
+  })
+  names(tempLS) = GeneSet
+  
+  return(tempLS)
+}
+
+
+
 #' Rotate SDA factorisation
 #'
 #' @param X SDA results list to be rotated

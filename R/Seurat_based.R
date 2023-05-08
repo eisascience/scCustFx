@@ -1,4 +1,126 @@
 
+#' Perform dual-feature gating on a Seurat object
+#' 
+#' @param SerObject A Seurat object to perform gating on.
+#' @param feat1 A character string representing the name of the first feature to gate on. Defaults to NULL.
+#' @param feat2 A character string representing the name of the second feature to gate on. Defaults to NULL.
+#' @param thr1 A numeric threshold value for the first feature. Defaults to 0.
+#' @param thr2 A numeric threshold value for the second feature. Defaults to 0.
+#' @param dir1 A character string representing the direction of the threshold for the first feature, either "pos" or "neg". Defaults to "pos".
+#' @param dir2 A character string representing the direction of the threshold for the second feature, either "pos" or "neg". Defaults to "pos".
+#' @param plotDimplot A logical value indicating whether to plot the result using Seurat's DimPlot function. Defaults to TRUE.
+#' @param returnSerObj A logical value indicating whether to return the modified Seurat object or just the gated cell names. Defaults to TRUE.
+#' 
+#' @return A Seurat object with the compGate metadata column added if \code{returnSerObj} is TRUE, otherwise a character vector of gated cell names.
+#' 
+#' @export
+DualFeatGate <- function(SerObject, 
+                         feat1 = NULL, 
+                         feat2 = NULL, 
+                         thr1 = 0, thr2 = 0, 
+                         dir1 = "pos", dir2 = "pos",
+                         cols = c("maroon", "gray", "blue", "forestgreen"),
+                         plotDimplot = T, returnSerObj=T) {
+  
+  score1 <- SerObject[[comp1]]
+  score2 <- SerObject[[comp2]]
+  
+  if(dir1=="pos") {
+    cells1 <- rownames(score1)[score1[,1] >= thr1]
+  } else {
+    cells1 <- rownames(score1)[score1[,1] <= thr1]
+  }
+  
+  if(dir2=="pos") {
+    cells2 <- rownames(score2)[score2[,1] >= thr2]
+  } else {
+    cells2 <- rownames(score2)[score2[,1] <= thr2]
+  }
+  
+  SerObject[["compGate"]] <- "neither"
+  SerObject[["compGate"]][cells1,] <- feat1
+  SerObject[["compGate"]][cells2,] <- feat2
+  SerObject[["compGate"]][intersect(cells1, cells2),] <- "both"
+  
+  if(plotDimplot){
+    p <- DimPlot(SerObject, 
+                 group.by = "compGate",
+                 cols = cols, 
+                 label = F, label.size = 6, repel = T, 
+                 raster = F) + 
+      NoLegend() +
+      facet_wrap(~compGate)
+    
+    print(p)
+  }
+  
+  if(returnSerObj) {
+    return(SerObject)
+  } else {
+    return(  SerObject[["compGate"]]  )
+  }
+  
+}
+
+
+
+#' Perform dual-feature gating on a Seurat object
+#' 
+#' @param SerObject A Seurat object to perform gating on.
+#' @param feat1 A character string representing the name of the first feature to gate on. Defaults to NULL.
+#' @param feat2 A character string representing the name of the second feature to gate on. Defaults to NULL.
+#' @param thr1 A numeric threshold value for the first feature. Defaults to 0.
+#' @param thr2 A numeric threshold value for the second feature. Defaults to 0.
+#' @param dir1 A character string representing the direction of the threshold for the first feature, either "pos" or "neg". Defaults to "pos".
+#' @param dir2 A character string representing the direction of the threshold for the second feature, either "pos" or "neg". Defaults to "pos".
+#' @param plotDimplot A logical value indicating whether to plot the result using Seurat's DimPlot function. Defaults to TRUE.
+#' @param returnSerObj A logical value indicating whether to return the modified Seurat object or just the gated cell names. Defaults to TRUE.
+#' 
+#' @return A Seurat object with the compGate metadata column added if \code{returnSerObj} is TRUE, otherwise a character vector of gated cell names.
+#' 
+#' @export
+SingleFeatGate <- function(SerObject, 
+                         feat1 = NULL, 
+                         thr1 = 0, 
+                         dir1 = "pos",
+                         cols = c("maroon", "gray"),
+                         plotDimplot = T, returnSerObj=T) {
+  
+  score1 <- SerObject[[comp1]]
+
+  if(dir1=="pos") {
+    cells1 <- rownames(score1)[score1[,1] >= thr1]
+  } else {
+    cells1 <- rownames(score1)[score1[,1] <= thr1]
+  }
+  
+  
+  SerObject[["compGate"]] <- "not"
+  SerObject[["compGate"]][cells1,] <- feat1
+
+  if(plotDimplot){
+    p <- DimPlot(SerObject, 
+                 group.by = "compGate",
+                 cols = cols, 
+                 label = F, label.size = 6, repel = T, 
+                 raster = F) + 
+      NoLegend() +
+      facet_wrap(~compGate)
+    
+    print(p)
+  }
+  
+  if(returnSerObj) {
+    return(SerObject)
+  } else {
+    return(  SerObject[["compGate"]]  )
+  }
+  
+}
+
+
+
+
 #' Get feature windows
 #'
 #' This function generates feature windows for a given feature and groups in a Seurat object.
