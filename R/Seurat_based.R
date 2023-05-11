@@ -22,8 +22,8 @@ DualFeatGate <- function(SerObject,
                          cols = c("maroon", "gray", "blue", "forestgreen"),
                          plotDimplot = T, returnSerObj=T) {
   
-  score1 <- SerObject[[comp1]]
-  score2 <- SerObject[[comp2]]
+  score1 <- SerObject[[feat1]]
+  score2 <- SerObject[[feat2]]
   
   if(dir1=="pos") {
     cells1 <- rownames(score1)[score1[,1] >= thr1]
@@ -86,7 +86,7 @@ SingleFeatGate <- function(SerObject,
                          cols = c("maroon", "gray"),
                          plotDimplot = T, returnSerObj=T) {
   
-  score1 <- SerObject[[comp1]]
+  score1 <- SerObject[[feat1]]
 
   if(dir1=="pos") {
     cells1 <- rownames(score1)[score1[,1] >= thr1]

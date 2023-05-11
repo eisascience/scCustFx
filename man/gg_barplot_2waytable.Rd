@@ -14,7 +14,9 @@ gg_barplot_2waytable(
   hjust = 0.9,
   vjust = 0.8,
   base_size = 10,
-  returnlist = T
+  returnlist = T,
+  col_vector,
+  theme = theme_bw(base_size = base_size)
 )
 }
 \arguments{
