@@ -1,3 +1,48 @@
+#' Rank a feature and plot a swarm grouped by select categorical metadata
+#' 
+#' @param SerObj A Seurat object to perform gating on.
+#' @param RankFeat A feature to rank, like SDA comp
+#' @param group.by A categorical meta feature
+#' @param color.by A categorical meta feature default NULL to color the point
+#' @param title A title
+#' 
+#' @return ggplot viz of ranking per group
+#' 
+#' @export
+Rank_Swarm <- function(SerObj, RankFeat, group.by, title = "Cell sorted", color.by = NULL){
+  
+  #TODO if PC or UMAP RANKFeat given to pull that seperately 
+  
+  library(ggbeeswarm)
+  
+  SerObj[[paste0(RankFeat, "_rank")]] <- rank(SerObj[[RankFeat]][,1]) 
+  
+  if(is.null(color.by)){
+    MetaDF = SerObj@meta.data[, c(paste0(RankFeat, "_rank"), group.by )]
+    
+    colnames(MetaDF) = c("pseudoT", "Grp")
+    
+   gg1 = ggplot(MetaDF, aes(x = pseudoT, y = Grp, 
+                       colour = Grp)) 
+      
+  } else {
+    
+    MetaDF = SerObj@meta.data[, c(paste0(RankFeat, "_rank"), c(group.by, color.by) )]
+    
+    colnames(MetaDF) = c("pseudoT", "Grp", "Col")
+    
+    gg1 = ggplot(MetaDF, aes(x = pseudoT, y = Grp, 
+                             colour = Col)) 
+    
+  }
+  
+  gg1 + geom_quasirandom(groupOnX = FALSE) +
+    ggthemes::scale_color_tableau() + theme_classic() +
+    xlab(RankFeat) + ylab(group.by) +
+    ggtitle(title)
+  
+}
+
 
 #' Perform dual-feature gating on a Seurat object
 #' 
@@ -57,7 +102,7 @@ DualFeatGate <- function(SerObject,
   if(returnSerObj) {
     return(SerObject)
   } else {
-    return(  SerObject[["compGate"]]  )
+    return(  p  )
   }
   
 }
