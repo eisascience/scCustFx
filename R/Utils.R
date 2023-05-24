@@ -1,4 +1,21 @@
 
+#' Quantile Breaks
+#'
+#' @param xs A numeric vector of values.
+#' @param n An integer specifying the number of quantile breaks to be calculated.
+#'
+#' @return A numeric vector representing the quantile breaks.
+#'
+#' @examples
+#' xs <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+#' quantile_breaks(xs, n = 5)
+#' 
+#' @export
+quantile_breaks <- function(xs, n = 10) {
+  breaks <- quantile(xs, probs = seq(0, 1, length.out = n))
+  breaks[!duplicated(breaks)]
+}
+
 
 #' Check if a value falls within a distribution range defined by a set of numbers
 #'

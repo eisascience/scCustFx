@@ -1,5 +1,40 @@
 
 
+#' gg_pie_table
+#'
+#' This function creates a pie chart with labels and frequency values using ggplot2.
+#'
+#' @param TBL A table or data frame containing the data for the pie chart.
+#' @param cols A vector of colors to be used for filling the pie slices.
+#' @param legend.position The position of the legend in the plot.
+#'
+#' @export
+gg_pie_table <- function(TBL = NULL, cols = col_vector, legend.position = "none"){
+  FreqtempDF = as.data.frame.table(TBL) #%>% tibble::column_to_rownames("Var1") 
+  FreqtempDF$fraction = round(FreqtempDF$Freq/sum(FreqtempDF$Freq), 4)
+  FreqtempDF$ymax = cumsum(FreqtempDF$fraction)
+  FreqtempDF$ymin = c(0, head(FreqtempDF$ymax, n=-1))
+  
+  # Compute label position
+  FreqtempDF$labelPosition <- (FreqtempDF$ymax + FreqtempDF$ymin) / 2
+  
+  # Compute a good label
+  FreqtempDF$label <- paste0(FreqtempDF$Var1, "\n value: ", FreqtempDF$Freq)
+  
+  ggplot(FreqtempDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Var1)) +
+    geom_rect() +
+    geom_label( x=4.7, aes(y=labelPosition, label=label), size=3) +
+    scale_fill_manual(values = cols)+
+    coord_polar(theta="y") +
+    xlim(c(0, 4)) +
+    theme_void() +
+    theme(legend.position =legend.position)
+  
+  
+}
+
+
+
 #' @title heatmap_table
 #'
 #' @description Takes a table and plots it. Either as a table or a pheatmap heatmap with clustering

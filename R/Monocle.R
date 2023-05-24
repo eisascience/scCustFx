@@ -1,3 +1,80 @@
+#' PseudoMySeur
+#'
+#' A function to create a pseudo-time trajectory using Monocle on a Seurat object.
+#'
+#' @param SerObj A Seurat object.
+#' @param features A character vector specifying the features (genes) to include in the analysis. If NULL, all features are used.
+#' @param removeCells A character vector specifying the cell names to remove from the analysis. If NULL, no cells are removed.
+#' @param removeNoisyFeats A logical value indicating whether to remove noisy features. Default is TRUE.
+#'
+#' @return A Monocle CellDataSet object representing the pseudo-time trajectory.
+#'
+#' @export
+PseudoMySeur <- function(SerObj, features=NULL, removeCells=NULL, removeNoisyFeats = T){
+  
+  if(is.null(features)) {
+    features = rownames(SerObj)
+  }
+  
+  if(removeNoisyFeats){
+    features <- features[!grepl("RPL", features)]
+    features <- features[!grepl("RPS", features)]
+    features <- features[!grepl("^MT", features)]
+    
+  }
+  
+  features = features[features %in% rownames(SerObj)]  
+  
+  
+  DGE_mat <- GetAssayData(SerObj, slot = "data")[features, ]
+  
+  metadata = SerObj@meta.data
+  
+  if(!is.null(removeCells)){
+    DGE_mat = DGE_mat[,setdiff(colnames(DGE_mat), c(removeCells))]
+  }
+  
+  
+  
+  metadata <- metadata[colnames(DGE_mat), ]
+  
+  library(monocle)
+  
+  pd <- new("AnnotatedDataFrame", data = metadata[colnames(DGE_mat), ])
+  fd <- new("AnnotatedDataFrame", data = data.frame(varpos = rownames(DGE_mat), gene_short_name = rownames(DGE_mat)))
+  rownames(fd) <- fd$varpos
+  
+  monocle <- newCellDataSet(scale(as.matrix(DGE_mat), center = F, scale = F),
+                            phenoData = pd,
+                            featureData = fd,
+                            lowerDetectionLimit = 0,
+                            expressionFamily = uninormal())
+  fData(monocle)$varpos <- TRUE
+  
+  
+  print("Reducing dimension by DDRTree...")
+  monocle <- reduceDimension(monocle,
+                             max_components = 15,  # attempted: 50, 20, 10, 15, 14
+                             reduction_method = 'DDRTree',
+                             norm_method = "none",
+                             pseudo_expr = 0,
+                             verbose = T )
+  
+  print("Ordering cells...")
+  
+  monocle <- orderCells(monocle)
+  
+  
+  monocle$Pseudotime_cut <- cut(monocle$Pseudotime, 5, labels = paste0("cut", 1:5))
+  monocle$State_Pseudo <- paste0("State", monocle$State, "_", monocle$Pseudotime_cut)
+  
+  return(monocle)
+  
+  
+  
+  
+}
+
 
 
 #' Ser2Monocle_MakeNProcess

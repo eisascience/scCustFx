@@ -1,3 +1,83 @@
+#' Bool.CellsGT
+#'
+#' This function checks whether the values in a specific gene's assay data of a Seurat object are greater than a given threshold.
+#'
+#' @param SerObj A Seurat object.
+#' @param thresh A numeric threshold value.
+#' @param slot The slot name of the Seurat object to retrieve the data from.
+#' @param assay The assay name to retrieve the data from.
+#' @param gene The name of the gene to subset the data.
+#'
+#' @export
+Bool.CellsGT <- function(SerObj, thresh, slot = "data", assay = "RNA", gene=NULL){
+  tempTab <- GetAssayData(SerObj, slot = slot, assay = assay)[gene, ]
+  print(summary(tempTab))
+  tempTab>thresh
+}
+
+
+#' CalculateModuleScoreAvg
+#'
+#' This function calculates the module scores for each cell in a Seurat object based on the average expression of a given gene list.
+#'
+#' @param seuratObj A Seurat object.
+#' @param genes.list A character vector specifying the genes to calculate the module scores.
+#' @param genes.pool A character vector specifying the genes to use for calculating the average expression.
+#' @param n.bin An integer specifying the number of bins for partitioning the average expression values.
+#' @param ctrl.size An integer specifying the size of the control group for calculating module scores.
+#' @param assay The assay name to retrieve the data from. If NULL, the default assay of the Seurat object is used.
+#' @param seed.use An integer specifying the seed value for random number generation.
+#'
+#' @export
+CalculateModuleScoreAvg <- function (seuratObj, genes.list = NULL, genes.pool = NULL, n.bin = 25, 
+                                     ctrl.size = 100, assay = NULL, seed.use = 1) 
+{
+  set.seed(seed = seed.use)
+  genes.old <- genes.list
+  if (is.null(x = genes.list)) {
+    stop("Missing input gene list")
+  }
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(seuratObj)
+  }
+  genes.list <- intersect(x = genes.list, y = rownames(seuratObj))
+  if (length(genes.list) == 0) {
+    print(paste0("No matching genes found in the seurat object from the gene list, attempting to match case."))
+    genes.list <- Seurat::CaseMatch(genes.old, match = rownames(seuratObj))
+  }
+  if (length(genes.list) == 0) {
+    print(paste0("No matching genes found in the seurat object from the gene list, aborting"))
+    return(NA)
+  }
+  if (is.null(x = genes.pool)) {
+    genes.pool = rownames(seuratObj)
+  }
+  data.avg <- Matrix::rowMeans(Seurat::GetAssayData(seuratObj, 
+                                                    assay = assay)[genes.pool, ])
+  data.avg <- data.avg[order(data.avg)]
+  data.cut <- as.numeric(x = Hmisc::cut2(x = data.avg, m = round(x = length(x = data.avg)/n.bin)))
+  names(x = data.cut) <- names(x = data.avg)
+  genes.use <- genes.list
+  ctrl.use <- character()
+  for (j in 1:length(x = genes.use)) {
+    ctrl.use <- c(ctrl.use, names(x = sample(x = data.cut[which(x = data.cut == 
+                                                                  data.cut[genes.use[j]])], size = ctrl.size, replace = FALSE)))
+  }
+  ctrl.use <- unique(ctrl.use)
+  ctrl.scores <- matrix(data = numeric(length = 1L), nrow = length(x = ctrl.use), 
+                        ncol = ncol(x = Seurat::GetAssayData(seuratObj, assay = assay)))
+  data <- Seurat::GetAssayData(seuratObj, assay = assay)
+  ctrl.scores <- Matrix::colMeans(x = data[ctrl.use, , drop = F])
+  genes.scores <- Matrix::colMeans(x = data[genes.list, , drop = FALSE])
+  
+  
+  return(data.frame(CellBarcode = colnames(x = Seurat::GetAssayData(seuratObj, 
+                                                                    assay = assay)), Score = (genes.scores - ctrl.scores)))
+}
+
+
+
+
 #' Rank a feature and plot a swarm grouped by select categorical metadata
 #' 
 #' @param SerObj A Seurat object to perform gating on.

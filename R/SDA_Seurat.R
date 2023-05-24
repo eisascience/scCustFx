@@ -1,4 +1,69 @@
 
+#' PercExprThrTab
+#'
+#' This function calculates the percentage of cells expressing each gene above a given threshold in each metadata group of a Seurat object.
+#'
+#' @param SeuratObj A Seurat object.
+#' @param GeneNames A character vector specifying the gene names to calculate the percentage for.
+#' @param CutThresh A numeric value specifying the threshold for gene expression. If NULL, quantile thresholding will be used.
+#' @param MetaDataName A character string specifying the metadata column name to group the cells.
+#' @param slot The slot name to retrieve the data from. Default is "data".
+#' @param Quant A numeric value specifying the quantile threshold to use if CutThresh is NULL.
+#' @param assay The assay name to retrieve the data from. If NULL, the default assay of the Seurat object is used.
+#'
+#' @export
+PercExprThrTab <- function(SeuratObj, GeneNames = NULL, CutThresh = NULL,
+                           MetaDataName = NULL, slot="data", Quant=0.1, assay="RNA" ){
+  # SeuratObj = RhAtlas452.Tcells.DS.CD8s; GeneNames= IDgenes; CutThresh = 1; MetaDataName = "CustClus"
+  
+  
+  if(is.null(GeneNames)) stop("GeneNames is NULL")
+  if(is.null(MetaDataName)) {
+    warning("MetaDataName is NULL, setting MetaDataName  = 'orig.ident' ")
+    MetaDataName  = "orig.ident"
+  }
+  # if(is.null(CutThresh)) stop("CutThresh is NULL")
+  
+  if(is.null(CutThresh)) print("using quantile thresholding")
+  
+  tempAssayData = GetAssayData(object = SeuratObj, slot = slot, assay = assay)
+  
+  print(paste0("number of genes not in seurat = ", length(GeneNames[!GeneNames %in% rownames(tempAssayData) ])))
+  
+  GeneNames <- GeneNames[GeneNames %in% rownames(tempAssayData)]
+  
+  tempDGE <- tempAssayData[GeneNames, ]
+  remove(tempAssayData)
+  
+  tempDFout <- as.data.frame( lapply(GeneNames, function(GeneName){
+    
+    if(is.null(CutThresh)) CutThresh = quantile(tempDGE[GeneName, ], Quant=Quant)
+    
+    tempTab <- table(tempDGE[GeneName, ]>CutThresh, 
+                     SeuratObj@meta.data[,MetaDataName])
+    
+    if(nrow(tempTab) == 1) {
+      tempTab <- as.table(rbind(tempTab, rep(0, length(tempTab))))
+      rownames(tempTab) <- c("FALSE", "TRUE")
+    }
+    
+    tempTab <- addmargins(tempTab)
+    # prcs <- round(tempTab[2,]/tempTab[3,]*100, 4)[1:(ncol(tempTab)-1)]
+    prcs <- round(tempTab["TRUE",]/tempTab["Sum",]*100, 4)[1:(ncol(tempTab)-1)]
+    prcs[is.na(prcs)] <- 0
+    prcs
+  }))
+  
+  colnames(tempDFout) <- GeneNames
+  
+  
+  
+  return(tempDFout)
+  
+}
+
+
+
 #' This function to add imputed scores from gene loading
 #'
 #' @param serObj A seurat Object, with assay RNA and slot data
