@@ -83,10 +83,11 @@ CommonLoadingSDAMat = function(sdaRuns){
 #' @export
 SDAScoreMeta2Reduction <- function(seuratObj, 
                                    loadingMat = NULL,
-                                   sdaComps = NULL, reduction.key = 'SDA_' , assayName = "RNA", reduction.name = "SDA"){
+                                   sdaComps = NULL, reduction.key = 'SDA_' , 
+                                   assayName = "RNA", reduction.name = "SDA"){
   
   embeddings <- Matrix::as.matrix(seuratObj@meta.data[,sdaComps] )
-  projected <- Matrix::as.matrix(CommonLoadingMat)
+  projected <- Matrix::as.matrix(loadingMat)
   
   colnames(projected) <- paste0(reduction.key, 1:ncol(projected))
   

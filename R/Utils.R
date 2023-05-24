@@ -293,6 +293,7 @@ count_overlap <- function(df) {
 #' @description Converts fraction to numeric
 #' @return A vector
 #' @keywords numeric
+#' @export
 frac_to_numeric <- function(x) sapply(x, function(x) eval(parse(text=x)))
 
 
@@ -304,6 +305,7 @@ frac_to_numeric <- function(x) sapply(x, function(x) eval(parse(text=x)))
 #' @keywords transpose, t
 #' @param dt The datatable
 #' @import data.table
+#' @export
 TransposeDT <- function(dt, varlabel="myVar") {
   dtrows = names(dt)
   dtcols = as.list(c(dt[,1]))
@@ -321,6 +323,7 @@ TransposeDT <- function(dt, varlabel="myVar") {
 #' @description uniformly sample a dataframe based on factor and porportion
 #' @return index of the uniformly sampled samples
 #' @keywords sample, uniform
+#' @export
 UniformSampleDF_FacPor <- function(x, ClassF, p){
   nr <- NROW(x)
   size <- (nr * p) %/% length(unique(ClassF))
@@ -347,6 +350,7 @@ WichIn1not2 <- function(Clus1N = c(1), DataT = "", Clus2N = c(2)){
 #' @param x, A vector of numbers, if small or not very smooth, use a smoothing function. Like density(x).
 #' @param m, An integer that acts as a loose hand for resolution.
 #' @return vector of peaks positions.
+#' @export
 find_peaks <- function (x, m = 4){
   #https://github.com/stas-g/findPeaks
   shape <- diff(sign(diff(x, na.pad = FALSE)))
@@ -359,4 +363,28 @@ find_peaks <- function (x, m = 4){
   })
   pks <- unlist(pks)
   pks
+}
+
+#' @title rotate_tsne
+#' @description rotates a tsne object 
+#' @param tsne, a tsne object with tsne$Y
+#' @param angle, rotation angle
+#' @return rotated tsne Y
+#' @export
+rotate_tsne <- function(tsne, angle){
+  angle <- (-angle * pi) / (-180)
+  rotm <- matrix(c(cos(angle), -sin(angle), sin(angle), cos(angle)), ncol=2)
+  tsne$Y %*% rotm
+}
+
+#' @title rotate_df
+#' @description rotates a 2D df like tsne UMAP etc any scatter 
+#' @param tsne, a 2D df scatter sctructure
+#' @param angle, rotation angle
+#' @return rotated tsne Y
+#' @export
+rotate_df <- function(df, angle){
+  angle <- (-angle * pi) / (-180)
+  rotm <- matrix(c(cos(angle), -sin(angle), sin(angle), cos(angle)), ncol=2)
+  df %*% rotm
 }
