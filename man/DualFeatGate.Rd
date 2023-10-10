@@ -14,7 +14,12 @@ DualFeatGate(
   dir2 = "pos",
   cols = c("maroon", "gray", "blue", "forestgreen"),
   plotDimplot = T,
-  returnSerObj = T
+  returnSerObj = T,
+  reduction = "umap",
+  label = F,
+  label.size = 6,
+  repel = T,
+  raster = F
 )
 }
 \arguments{

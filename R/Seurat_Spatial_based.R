@@ -7,15 +7,23 @@
 #' @param serObj a seurat obj 
 #' @return A Processed Seurat Obj
 #' @export
-process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial",
-                           dims=1:30, verbose = T, clusterResolutions = c(0.2, 0.4, 0.6, 0.8, 1.2)){
+process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial", 
+                           vst.flavor = "v2",
+                           dims=1:30, verbose = T, 
+                           do_tSNE = F,
+                           clusterResolutions = c(0.2, 0.4, 0.6, 0.8, 1.2)){
+  
+  
   print("SCT transformation start")
   serObj <- SCTransform(serObj, assay = assay, 
                         ncells = ncells, # of cells used to build NB regression def is 5000
-                        verbose = verbose)
+                        verbose = verbose,
+                        vst.flavor = vst.flavor)
   print("Running PCA start")
   serObj <- RunPCA(serObj)
-  serObj <- RunTSNE(serObj, dims = dims, perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  check_duplicates = FALSE)
+  if(do_tSNE) serObj <- RunTSNE(serObj, dims = dims, 
+                                perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  
+                                check_duplicates = FALSE)
   print("Running UMAP start")
   serObj <- RunUMAP(serObj, dims = dims)
   print("Running Clustering start")

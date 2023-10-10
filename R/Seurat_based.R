@@ -145,7 +145,9 @@ DualFeatGate <- function(SerObject,
                          thr1 = 0, thr2 = 0, 
                          dir1 = "pos", dir2 = "pos",
                          cols = c("maroon", "gray", "blue", "forestgreen"),
-                         plotDimplot = T, returnSerObj=T) {
+                         plotDimplot = T, returnSerObj=T, reduction = "umap",
+                         label = F, label.size = 6, repel = T, 
+                         raster = F) {
   
   score1 <- SerObject[[feat1]]
   score2 <- SerObject[[feat2]]
@@ -171,8 +173,9 @@ DualFeatGate <- function(SerObject,
     p <- DimPlot(SerObject, 
                  group.by = "compGate",
                  cols = cols, 
-                 label = F, label.size = 6, repel = T, 
-                 raster = F) + 
+                 reduction = reduction,
+                 label = label, label.size = label.size, repel = repel, 
+                 raster = raster) + 
       NoLegend() +
       facet_wrap(~compGate)
     
@@ -536,6 +539,126 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
   }
   
   
+}
+
+
+
+#' Plot Violin Plots of Gene Expression by Group combo version
+#' 
+#' @param seuratObj A Seurat object containing the data to plot.
+#' @param Feats_pos The name of the feature to plot from pos side
+#' @param Feats_neg The name of the feature to plot from neg side
+#' @param group.by The name of the metadata field to group cells by.
+#' @param NumFeatName The name of the variable containing the number of features for each cell. If provided, cells with a number of features greater than the median will be excluded from the plot.
+#' @param cutGT  If TRUE (default), cells with a number of features greater than the median will be excluded from the plot. If FALSE, cells with a number of features less than or equal to the median will be excluded from the plot.
+#' @param ThrCut  The threshold for feature filtering. Cells with a value in the sdaCompName column greater than this threshold will be excluded from the plot. Default is 0, which will skip this step.
+#' @param GrpFacLevels  The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.
+#' @param comparisons  A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.
+#' @param xlab (Optional) The x-axis label.
+#' @param ylab (Optional) The y-axis label.
+#' @param palette  The color palette to use for the plot.
+#' @param addJitter  If TRUE, jitter points will be added to the plot. Default is FALSE.
+#' @param getWindows  Bool default T to get bins to split 
+#' @param decreasing  prder of pseudotime .
+#' 
+#' @return A ggplot object.
+#' 
+#' 
+#' @export
+Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL, Feats_neg = NULL, base_size = 20, col_vector = col_vector,
+                                         showScatter = TRUE, downsampleScatter = TRUE, scatterAlpha = 0.5, 
+                                         getWindows = T, decreasing=F,  group.by = "Population") {
+  
+  if (is.null(Feats_pos) && is.null(Feats_neg))
+    stop("Enter values for Feats_pos or Feats_neg")
+  
+  tempDF <- Seurat::FetchData(seuratObj, SortByName)
+  tempDF$orig.ord <- 1:nrow(tempDF)
+  tempDF <- tempDF[order(tempDF[, 1], decreasing = decreasing), , drop = FALSE]
+  tempDF$ord <- 1:nrow(tempDF)
+  
+  if(getWindows){
+    
+    vlines = scCustFx::getFeatWindows( seuratObj, 
+                                       feat = SortByName, 
+                                       group.by = group.by)$vlines
+    tempDF$bin = "low"
+    
+    tempDF$bin[tempDF[,1]>vlines[3]] = "mid-high"
+    tempDF$bin[tempDF[,1]>vlines[4]] = "high"
+    
+    tempDF$bin[tempDF[,1]<=vlines[3]] = "mid-low"
+    tempDF$bin[tempDF[,1]<=vlines[2]] = "low"
+    tempDF$bin = factor(tempDF$bin, levels=c("low", "mid-low", "mid-high", "high"))
+    
+    
+  }
+  
+  
+  
+  
+  
+  baseColnames <- colnames(tempDF)
+  
+  if (!is.null(Feats_pos)) {
+    if (length(Feats_pos) == 1) {
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])
+    } else if (length(Feats_pos) > 1) {
+      
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])))
+      
+      # colnames(tempDF) <- c(baseColnames, Feats_pos)
+    }
+  }
+  
+  if (!is.null(Feats_neg)) {
+    if (length(Feats_neg) == 1) {
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])
+    } else if (length(Feats_neg) > 1) {
+      
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])))
+      # colnames(tempDF) <- c(baseColnames, Feats_neg)
+    }
+  }
+  
+  tempDF_long <- reshape2::melt(tempDF, id.vars = baseColnames, measure.vars = c(Feats_pos, Feats_neg))
+  
+  tempDF_long$feat_type <- ifelse(tempDF_long$variable %in% Feats_pos, "Positive", "Negative")
+  
+  
+  gg1 <- ggplot(tempDF_long, aes(x = sqrt(ord), y = value, color = variable, linetype = feat_type))
+  
+  if (showScatter) {
+    if (downsampleScatter) {
+      gg1 <- gg1 + geom_point(data = tempDF_long %>% sample_frac(0.2), alpha = scatterAlpha)
+    } else {
+      gg1 <- gg1 + geom_point(alpha = scatterAlpha)
+    }
+  }
+  
+  
+  
+  gg1 = gg1 + geom_smooth(aes(fill = feat_type), method = "auto", se = TRUE, level = 0.95) +
+    scale_color_manual(values = c(col_vector[1:length(Feats_pos)], col_vector[1:length(Feats_neg)]), name = "Top Genes") +
+    scale_linetype_manual(values = c("dashed", "solid"), name = "Feature Type", guide = "none") +
+    scale_fill_manual(values = c("skyblue2", "pink2"), name = "Feature Type", guide = "none") +
+    theme_classic(base_size = base_size) +
+    ggtitle(SortByName) +
+    # scale_y_sqrt()+
+    xlab("Sqrt-ordered score high -> low") +
+    ylab("Gene Expression") 
+  
+  if(getWindows){
+    gg1 = gg1 +  geom_vline(xintercept = c(
+      # sqrt(min(subset(tempDF, bin=="low")$ord)),
+      sqrt(min(subset(tempDF, bin=="mid-low")$ord)),
+      sqrt(min(subset(tempDF, bin=="mid-high")$ord)),
+      sqrt(min(subset(tempDF, bin=="high")$ord))
+    ))
+    
+  }
+  
+  return(gg1)
 }
 
 
