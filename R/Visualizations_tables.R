@@ -75,12 +75,14 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
 #' @param hjust if angle is 90 set to 1 
 #' @param vjust if angle is 90 set to 0.5
 #' @param returnlist logical
+#' @param col_vector a vector of colors
+#' @param theme a ggplot theme, default theme_bw(base_size = base_size)
 #' @param base_size numerical
 #' @return A ggplot 
 #' @export
 gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", PlotCombo = F, xlab="", 
                                 xtext_angle = 45, hjust = 0.9,vjust = 0.8,base_size = 10,
-                                returnlist = T, col_vector, 
+                                returnlist = T, col_vector=col_vector, 
                                 theme = theme_bw(base_size = base_size)){
   tempMeltDF <- reshape2::melt(MyTable)
   

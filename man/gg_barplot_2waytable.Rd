@@ -15,7 +15,7 @@ gg_barplot_2waytable(
   vjust = 0.8,
   base_size = 10,
   returnlist = T,
-  col_vector,
+  col_vector = col_vector,
   theme = theme_bw(base_size = base_size)
 )
 }
@@ -39,6 +39,10 @@ gg_barplot_2waytable(
 \item{base_size}{numerical}
 
 \item{returnlist}{logical}
+
+\item{col_vector}{a vector of colors}
+
+\item{theme}{a ggplot theme, default theme_bw(base_size = base_size)}
 }
 \value{
 A ggplot
