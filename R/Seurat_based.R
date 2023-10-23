@@ -4,39 +4,47 @@
 #' adding percentage labels to the legend to represent the proportion of total points 
 #' in each category.
 #'
-#' @param ComboSerObj A Seurat object containing the data.
+#' @param SerObj A Seurat object containing the data.
 #' @param group_feature The feature based on which the data will be grouped and plotted.
 #' @param color_values A vector of color values for the groups.
+#' @param alpha The alpha (transparency) value for the points. Default is 0.3.
+#' @param raster Logical, indicating whether raster graphics should be used. Default is FALSE.
+#' @param raster.dpi A numeric vector of length 2 indicating the resolution of the raster 
+#'   graphics. Default is c(2000, 2000).
+#' @param pt.size The size of the points in the plot. Default is 0.5.
+#' @param base_size The base font size for the plot. Default is 10.
+#' @param theme_b The theme to be applied to the plot. Default is theme_bw with base_size parameter.
 #' @return A ggplot object with grouped points and legend labels representing percentages.
 #' @examples
 #' \dontrun{
 #' # Example usage:
-#' # gg <- create_grouped_plot(ComboSerObj, group_feature = "IsAlphaBeta", 
-#' #                           color_values = c("dodgerblue", "maroon"))
+#' # gg <- create_grouped_plot(SerObj, group_feature = "IsAlphaBeta", 
+#' #                           color_values = c("dodgerblue", "maroon"), alpha = 0.3,
+#' #                           raster = FALSE, raster.dpi = c(2000, 2000), pt.size = 0.5,
+#' #                           base_size = 10, theme_b = theme_bw(base_size = 10))
 #' }
-create_grouped_plot <- function(ComboSerObj, group_feature, color_values) {
+#'
+#' @export
+create_grouped_plot <- function(SerObj, group_feature, color_values = c("dodgerblue", "maroon"), 
+                                alpha = .3, raster=F, raster.dpi = c(2000, 2000), 
+                                pt.size = .5,base_size = 10,
+                                theme_b = theme_bw(base_size = base_size)) {
   # Extract the specified group_feature column from the Seurat object
-  group_column <- ComboSerObj[[group_feature]]
+  group_column <- SerObj[[group_feature]]
   
   # Calculate percentage of total points for the specified group_feature
   percentages <- round(table(group_column) / nrow(group_column) * 100 , 2)
   
-  gg <- DimPlot(ComboSerObj, 
+  gg <- DimPlot(SerObj, 
                 group.by = group_feature, 
-                raster = F, raster.dpi = c(2000, 2000), 
-                cols = alpha(color_values, .3),
-                pt.size = .5, order = T) +
-    theme_classic(base_size = 14) +
-    theme(axis.line = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank()) +
+                raster = raster, raster.dpi = raster.dpi, 
+                cols = alpha(color_values, alpha),
+                pt.size = pt.size, order = T) +
     scale_color_manual(values = color_values, 
                        breaks = names(percentages), 
                        labels = paste(names(percentages), 
                                       " (", round(percentages, 1), "%)")) +
-    theme_classic(base_size = 14) +
+    ttheme_b +
     theme(axis.line = element_blank(),
           axis.text.x = element_blank(),
           axis.text.y = element_blank(),
@@ -2003,7 +2011,7 @@ FindAllMarkers_SubsetCoord <- function(so, reduction_method = "tSNE", x_range = 
                                        savePathName = NULL){
   so_sub = SubsetSerByCoordinates(so=so, reduction_method = reduction_method, x_range = x_range, y_range = y_range)
   
-  DEgenes_unsupclusts = FindAllMarkers(ComboSerObj,
+  DEgenes_unsupclusts = FindAllMarkers(SerObj,
                             logfc.threshold = logfc.threshold,
                             test.use = test.use, slot = slot,
                             min.pct = min.pct, min.diff.pct = min.diff.pct,

@@ -4,14 +4,37 @@
 \alias{create_grouped_plot}
 \title{Create a grouped plot with percentage labels in the legend.}
 \usage{
-create_grouped_plot(ComboSerObj, group_feature, color_values)
+create_grouped_plot(
+  SerObj,
+  group_feature,
+  color_values = c("dodgerblue", "maroon"),
+  alpha = 0.3,
+  raster = F,
+  raster.dpi = c(2000, 2000),
+  pt.size = 0.5,
+  base_size = 10,
+  theme_b = theme_bw(base_size = base_size)
+)
 }
 \arguments{
-\item{ComboSerObj}{A Seurat object containing the data.}
+\item{SerObj}{A Seurat object containing the data.}
 
 \item{group_feature}{The feature based on which the data will be grouped and plotted.}
 
 \item{color_values}{A vector of color values for the groups.}
+
+\item{alpha}{The alpha (transparency) value for the points. Default is 0.3.}
+
+\item{raster}{Logical, indicating whether raster graphics should be used. Default is FALSE.}
+
+\item{raster.dpi}{A numeric vector of length 2 indicating the resolution of the raster 
+graphics. Default is c(2000, 2000).}
+
+\item{pt.size}{The size of the points in the plot. Default is 0.5.}
+
+\item{base_size}{The base font size for the plot. Default is 10.}
+
+\item{theme_b}{The theme to be applied to the plot. Default is theme_bw with base_size parameter.}
 }
 \value{
 A ggplot object with grouped points and legend labels representing percentages.
@@ -24,7 +47,10 @@ in each category.
 \examples{
 \dontrun{
 # Example usage:
-# gg <- create_grouped_plot(ComboSerObj, group_feature = "IsAlphaBeta", 
-#                           color_values = c("dodgerblue", "maroon"))
+# gg <- create_grouped_plot(SerObj, group_feature = "IsAlphaBeta", 
+#                           color_values = c("dodgerblue", "maroon"), alpha = 0.3,
+#                           raster = FALSE, raster.dpi = c(2000, 2000), pt.size = 0.5,
+#                           base_size = 10, theme_b = theme_bw(base_size = 10))
 }
+
 }

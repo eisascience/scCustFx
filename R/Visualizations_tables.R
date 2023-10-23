@@ -83,13 +83,13 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
 gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", PlotCombo = F, xlab="", 
                                 xtext_angle = 45, hjust = 0.9,vjust = 0.8,base_size = 10,
                                 returnlist = T, col_vector=col_vector, 
-                                theme = theme_bw(base_size = base_size)){
+                                theme_b = theme_bw(base_size = base_size)){
   tempMeltDF <- reshape2::melt(MyTable)
   
   
   p1 <- (ggplot(tempMeltDF) +
            geom_bar(aes(x=Var2, y=value, fill=factor(Var1)), stat="identity", width = 0.7) +
-           theme + scale_fill_manual(values=col_vector) +
+           theme_b + scale_fill_manual(values=col_vector) +
            theme(legend.position=legend.position,
                  legend.direction="horizontal",
                  axis.text.x = ggplot2::element_text(angle = xtext_angle, vjust = vjust, hjust=hjust),
@@ -99,7 +99,7 @@ gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", Plo
   
   p2<- (ggplot(tempMeltDF) +
           geom_bar(aes(x=Var2, y=value, fill=factor(Var1)), stat="identity", width = 0.7, position="fill") +
-          theme  + scale_fill_manual(values=col_vector) +
+          theme_b  + scale_fill_manual(values=col_vector) +
           theme(legend.position=legend.position,
                 legend.direction="horizontal",
                 axis.text.x = ggplot2::element_text(angle = xtext_angle, vjust = vjust, hjust=hjust),
