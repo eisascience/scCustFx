@@ -1,3 +1,53 @@
+#' Create a grouped plot with percentage labels in the legend.
+#'
+#' This function generates a grouped plot for the specified feature in a Seurat object, 
+#' adding percentage labels to the legend to represent the proportion of total points 
+#' in each category.
+#'
+#' @param ComboSerObj A Seurat object containing the data.
+#' @param group_feature The feature based on which the data will be grouped and plotted.
+#' @param color_values A vector of color values for the groups.
+#' @return A ggplot object with grouped points and legend labels representing percentages.
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' # gg <- create_grouped_plot(ComboSerObj, group_feature = "IsAlphaBeta", 
+#' #                           color_values = c("dodgerblue", "maroon"))
+#' }
+create_grouped_plot <- function(ComboSerObj, group_feature, color_values) {
+  # Extract the specified group_feature column from the Seurat object
+  group_column <- ComboSerObj[[group_feature]]
+  
+  # Calculate percentage of total points for the specified group_feature
+  percentages <- round(table(group_column) / nrow(group_column) * 100 , 2)
+  
+  gg <- DimPlot(ComboSerObj, 
+                group.by = group_feature, 
+                raster = F, raster.dpi = c(2000, 2000), 
+                cols = alpha(color_values, .3),
+                pt.size = .5, order = T) +
+    theme_classic(base_size = 14) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank()) +
+    scale_color_manual(values = color_values, 
+                       breaks = names(percentages), 
+                       labels = paste(names(percentages), 
+                                      " (", round(percentages, 1), "%)")) +
+    theme_classic(base_size = 14) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank()) +
+    labs(color = group_feature)
+  
+  return(gg)
+}
+
+
 #' Bool.CellsGT
 #'
 #' This function checks whether the values in a specific gene's assay data of a Seurat object are greater than a given threshold.

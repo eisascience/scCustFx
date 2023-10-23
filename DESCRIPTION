@@ -1,15 +1,15 @@
 Package: scCustFx
 Type: Package
 Title: single-cell custom fxs Package
-Version: 0.0.1
+Version: 0.0.2
 Author: Eisa Mahyari
 Maintainer: The package maintainer <mahyarie@ohsu.edu>
-Description: The goal of this package is bringing together tools and pipelines for the analysis of single-cell RNASeq data to complement other packages like Seurat and OOSAP.
+Description: The goal of this package is bringing together tools and pipelines for the analysis of single-cell and spatial omics data to complement other packages like Seurat and OOSAP.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 3.5.0)
+    R (>= 4.3.0)
 Imports:
     data.table,
     dplyr,
@@ -29,7 +29,6 @@ Suggests:
     Seurat,
     SeuratDisk,
     Rlabkey,
-    CellMembrane,
     monocle,
     org.Hs.eg.db,
     org.Mm.eg.db,
@@ -38,7 +37,6 @@ Suggests:
     DESeq2,
     genefilter,
     ggvis,
-    devtools,
     DropletUtils,
     SingleR,
     MAST,
@@ -54,7 +52,6 @@ Suggests:
     Hmisc,
     testthat (>= 2.1.0)
 Remotes:
-    bimberlabinternal/CellMembrane,
     mojaveazure/seurat-disk,
     VPetukhov/ggrastr,
     juba/rmdformats,
