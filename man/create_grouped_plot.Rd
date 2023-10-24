@@ -13,7 +13,7 @@ create_grouped_plot(
   raster.dpi = c(2000, 2000),
   pt.size = 0.5,
   base_size = 10,
-  theme_b = theme_bw(base_size = base_size)
+  theme_b = theme_classic(base_size = base_size)
 )
 }
 \arguments{
@@ -50,7 +50,7 @@ in each category.
 # gg <- create_grouped_plot(SerObj, group_feature = "IsAlphaBeta", 
 #                           color_values = c("dodgerblue", "maroon"), alpha = 0.3,
 #                           raster = FALSE, raster.dpi = c(2000, 2000), pt.size = 0.5,
-#                           base_size = 10, theme_b = theme_bw(base_size = 10))
+#                           base_size = 10, theme_b = theme_classic(base_size = 10))
 }
 
 }

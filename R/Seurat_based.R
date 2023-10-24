@@ -1,3 +1,39 @@
+#' Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33
+#'
+#' @param SerObj A Seurat object containing the data.
+#'
+#' @export
+Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
+  
+  TRAV1_2cells <- grepl("TRAV1-2", SerObj$TRA_V)
+  if(!is.null(TRAV1_2cells)){
+    SerObj$Has_TRAV1_2 <- "Not TRAV1-2"
+    SerObj$Has_TRAV1_2[TRAV1_2cells] <- "TRAV1-2"
+    
+    if (plot) {
+      print(DimPlot(SerObj, group.by = 'Has_TRAV1_2', raster = TRUE, raster.dpi = c(800, 800), cols = c("gray", "maroon")))
+      print(pheatmap::pheatmap(asinh(chisq.test(table(SerObj$Has_TRAV1_2, SerObj$Population))$res)))
+    }
+    
+    SerObj$IsMAITclassic <- "Not TRAV1-2"
+    SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2"] <- "TRAV1-2"
+    SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2" & SerObj$TRA_J == "TRAJ33"] <- "TRAV1-2 TRAJ33"
+    
+    # if (plot) {
+    #   print(DimPlot(SerObj, group.by = 'IsMAITclassic', raster = TRUE, raster.dpi = c(800, 800), pt.size = 3) +
+    #           xlim(-8, -4) + ylim(1, 4))
+    # }
+    
+    
+  } else {
+    print("TRAV1-2 not found in SerObj$TRA_V")
+  }
+  
+  return(SerObj)
+}
+
+
+
 #' Create a grouped plot with percentage labels in the legend.
 #'
 #' This function generates a grouped plot for the specified feature in a Seurat object, 
@@ -21,14 +57,14 @@
 #' # gg <- create_grouped_plot(SerObj, group_feature = "IsAlphaBeta", 
 #' #                           color_values = c("dodgerblue", "maroon"), alpha = 0.3,
 #' #                           raster = FALSE, raster.dpi = c(2000, 2000), pt.size = 0.5,
-#' #                           base_size = 10, theme_b = theme_bw(base_size = 10))
+#' #                           base_size = 10, theme_b = theme_classic(base_size = 10))
 #' }
 #'
 #' @export
 create_grouped_plot <- function(SerObj, group_feature, color_values = c("dodgerblue", "maroon"), 
                                 alpha = .3, raster=F, raster.dpi = c(2000, 2000), 
                                 pt.size = .5,base_size = 10,
-                                theme_b = theme_bw(base_size = base_size)) {
+                                theme_b = theme_classic(base_size = base_size)) {
   # Extract the specified group_feature column from the Seurat object
   group_column <- SerObj[[group_feature]]
   
@@ -44,7 +80,7 @@ create_grouped_plot <- function(SerObj, group_feature, color_values = c("dodgerb
                        breaks = names(percentages), 
                        labels = paste(names(percentages), 
                                       " (", round(percentages, 1), "%)")) +
-    ttheme_b +
+    theme_b +
     theme(axis.line = element_blank(),
           axis.text.x = element_blank(),
           axis.text.y = element_blank(),
