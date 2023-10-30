@@ -35,15 +35,16 @@ gg_pie_table <- function(TBL = NULL, cols = col_vector, legend.position = "none"
 
 
 
-#' @title heatmap_table
+#' heatmap_table
 #'
-#' @description Takes a table and plots it. Either as a table or a pheatmap heatmap with clustering
+#' Takes a table and plots it. Either as a table or a pheatmap heatmap with clustering
 #' @param TBL A table (base R table()) 
 #' @param clust.meth default is "ward.D2", see pheatmap for more options
 #' @param clust.dist default is "euclidean", see pheatmap for more options
 #' @param Title A title else ''
 #' @param plotTable default is F, if T, it will plot an actual table
 #' @return A pheatmap heatmap or a plotted table
+#' 
 #' @export
 heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Title="", plotTable=F){
   if(plotTable){
@@ -63,11 +64,11 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
   }
 }
 
-#' @title gg_barplot_table, aka OOSAP::PlotMyTable
+#' gg_barplot_table, aka OOSAP::PlotMyTable
 #'
-#' @description Takes a table and plots a gg barplot 
+#' Takes a table and plots a gg barplot 
 #' @param MyTable A 2way table (base R table()) 
-#' @param Title A title else ''
+#' @param Title A title else ""
 #' @param legend.position legend position defautl "bottom"
 #' @param PlotCombo if T plots % and count plots together
 #' @param xlab x axis label
@@ -128,11 +129,11 @@ gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", Plo
 
 
 
-#' @title gg_barplot_table
+#' gg_barplot_table
 #'
-#' @description Takes a table and plots a gg barplot 
+#' Takes a table and plots a gg barplot 
 #' @param TBL A table (base R table()) 
-#' @param Title A title else ''
+#' @param Title A title else ""
 #' @param gg_theme a ggplot theme or NULL
 #' @return A ggplot 
 #' @export

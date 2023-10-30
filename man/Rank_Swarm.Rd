@@ -4,7 +4,13 @@
 \alias{Rank_Swarm}
 \title{Rank a feature and plot a swarm grouped by select categorical metadata}
 \usage{
-Rank_Swarm(SerObj, RankFeat, group.by, title = "Cell sorted", color.by = NULL)
+Rank_Swarm(
+  SerObj,
+  RankFeat,
+  group.by,
+  title = "Cell SerObjrted",
+  color.by = NULL
+)
 }
 \arguments{
 \item{SerObj}{A Seurat object to perform gating on.}

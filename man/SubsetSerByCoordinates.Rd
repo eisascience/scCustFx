@@ -5,7 +5,7 @@
 \title{SubsetSerByCoordinates}
 \usage{
 SubsetSerByCoordinates(
-  so,
+  SerObj,
   reduction_method = "tSNE",
   assay = "RNA",
   x_range = c(-1, 1),
@@ -13,7 +13,7 @@ SubsetSerByCoordinates(
 )
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{reduction_method}{an input of  = c("tSNE", "UMAP", "PCA") default tSNE}
 

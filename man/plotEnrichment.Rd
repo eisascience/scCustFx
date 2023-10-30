@@ -5,7 +5,7 @@
 \title{Plot Enrichment}
 \usage{
 plotEnrichment(
-  seuratObj,
+  SerObj,
   field1,
   field2,
   size,
@@ -15,7 +15,7 @@ plotEnrichment(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{field1}{Field 1 to compare.}
 

@@ -5,14 +5,14 @@
 \title{Plot Violin Plots of Gene Expression by Group}
 \usage{
 plot_violin_wFeatFilter(
-  seuratObj,
+  SerObj,
   Feature,
   group.by,
   NumFeatName = NULL,
   cutGT = T,
   ThrCut = 0,
   GrpFacLevels = NULL,
-  comparisons = NULL,
+  compariSerObjns = NULL,
   xlab = "",
   ylab = "",
   palette = col_vector,
@@ -20,7 +20,7 @@ plot_violin_wFeatFilter(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object containing the data to plot.}
+\item{SerObj}{A Seurat object containing the data to plot.}
 
 \item{Feature}{The name of the feature to plot.}
 
@@ -34,7 +34,7 @@ plot_violin_wFeatFilter(
 
 \item{GrpFacLevels}{The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.}
 
-\item{comparisons}{A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.}
+\item{compariSerObjns}{A list of compariSerObjns to perform using \code{stat_compare_means}. Each compariSerObjn should be a vector of two group names.}
 
 \item{xlab}{(Optional) The x-axis label.}
 

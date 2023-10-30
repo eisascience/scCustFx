@@ -5,7 +5,7 @@
 \title{PlotFeatThrTab}
 \usage{
 PlotFeatThrTab(
-  SeuratObj,
+  SerObj,
   FeatName = NULL,
   CutThresh = NULL,
   PlotBar = T,
@@ -16,7 +16,7 @@ PlotFeatThrTab(
 )
 }
 \arguments{
-\item{SeuratObj, }{A Seurat object.}
+\item{SerObj, }{A Seurat object.}
 
 \item{FeatName, }{the Feature name of interest.}
 

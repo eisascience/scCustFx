@@ -5,7 +5,7 @@
 \title{QuantileADTcounter}
 \usage{
 QuantileADTcounter(
-  so,
+  SerObj,
   features = NULL,
   min.cells = 10,
   slot = "data",
@@ -13,7 +13,7 @@ QuantileADTcounter(
 )
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{features}{Features}
 

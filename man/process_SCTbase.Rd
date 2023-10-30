@@ -5,7 +5,7 @@
 \title{process Seurat Spatial object via SCT}
 \usage{
 process_SCTbase(
-  serObj = NULL,
+  SerObj = NULL,
   ncells = 3000,
   assay = "Spatial",
   dims = 1:30,
@@ -14,7 +14,7 @@ process_SCTbase(
 )
 
 process_SCTbase(
-  serObj = NULL,
+  SerObj = NULL,
   ncells = 3000,
   assay = "Spatial",
   dims = 1:30,
@@ -23,7 +23,7 @@ process_SCTbase(
 )
 }
 \arguments{
-\item{serObj}{A seurat object containing single cell transcriptomics data}
+\item{SerObj}{A seurat object containing single cell transcriptomics data}
 
 \item{ncells}{The number of cells used to build NB regression, default is 3000}
 

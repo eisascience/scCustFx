@@ -4,10 +4,10 @@
 \alias{ReduceSerObj_HTO}
 \title{ReduceSerObj_HTO}
 \usage{
-ReduceSerObj_HTO(so, removeHTOs = NULL)
+ReduceSerObj_HTO(SerObj, removeHTOs = NULL)
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{removeHTOs}{Vector of names of HTOs to remove, if NULL, removeHTOs = c("Discordant", "Doublet", "ND")}
 }

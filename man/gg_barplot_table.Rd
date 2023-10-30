@@ -9,7 +9,7 @@ gg_barplot_table(TBL, Title = "", gg_theme = NULL)
 \arguments{
 \item{TBL}{A table (base R table())}
 
-\item{Title}{A title else ''}
+\item{Title}{A title else ""}
 
 \item{gg_theme}{a ggplot theme or NULL}
 }

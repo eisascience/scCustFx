@@ -5,7 +5,7 @@
 \title{Create a protein heatmap}
 \usage{
 CreateProteinHeatmap(
-  seuratObj,
+  SerObj,
   proteinList,
   labelColumn,
   prefix,
@@ -16,7 +16,7 @@ CreateProteinHeatmap(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{proteinList}{A list of proteins to plot.}
 

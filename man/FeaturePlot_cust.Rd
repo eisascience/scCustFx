@@ -5,7 +5,7 @@
 \title{Generate a FeaturePlot_cust which is a scatter plot with gene expression as color scale}
 \usage{
 FeaturePlot_cust(
-  SerObject,
+  SerObj,
   dim1,
   dim2,
   pt.size = 1,
@@ -16,7 +16,7 @@ FeaturePlot_cust(
 )
 }
 \arguments{
-\item{SerObject}{A Seurat object containing the data to plot}
+\item{SerObj}{A Seurat object containing the data to plot}
 
 \item{dim1}{Name of the first feature to plot on the x-axis}
 

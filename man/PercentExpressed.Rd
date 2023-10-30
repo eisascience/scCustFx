@@ -4,10 +4,10 @@
 \alias{PercentExpressed}
 \title{Calculate the percent expressed cells for each group in a Seurat object}
 \usage{
-PercentExpressed(so, group.by, features, plot_perHM = F)
+PercentExpressed(SerObj, group.by, features, plot_perHM = F)
 }
 \arguments{
-\item{so}{A Seurat object}
+\item{SerObj}{A Seurat object}
 
 \item{group.by}{A meta feature used to group the cells}
 

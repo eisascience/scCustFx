@@ -4,10 +4,10 @@
 #'
 #' process Seurat Spatial object via SCT
 #' 
-#' @param serObj a seurat obj 
+#' @param SerObj a seurat obj 
 #' @return A Processed Seurat Obj
 #' @export
-process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial", 
+process_SCTbase = function(SerObj = NULL, ncells = 3000, assay = "Spatial", 
                            vst.flavor = "v2",
                            dims=1:30, verbose = T, 
                            do_tSNE = F,
@@ -15,24 +15,24 @@ process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial",
   
   
   print("SCT transformation start")
-  serObj <- SCTransform(serObj, assay = assay, 
+  SerObj <- SCTransform(SerObj, assay = assay, 
                         ncells = ncells, # of cells used to build NB regression def is 5000
                         verbose = verbose,
                         vst.flavor = vst.flavor)
   print("Running PCA start")
-  serObj <- RunPCA(serObj)
-  if(do_tSNE) serObj <- RunTSNE(serObj, dims = dims, 
-                                perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  
+  SerObj <- RunPCA(SerObj)
+  if(do_tSNE) SerObj <- RunTSNE(SerObj, dims = dims, 
+                                perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(SerObj, perplexity = 30),  
                                 check_duplicates = FALSE)
   print("Running UMAP start")
-  serObj <- RunUMAP(serObj, dims = dims)
+  SerObj <- RunUMAP(SerObj, dims = dims)
   print("Running Clustering start")
-  serObj <- FindNeighbors(serObj, dims = dims)
+  SerObj <- FindNeighbors(SerObj, dims = dims)
   for (resolution in clusterResolutions) {
-    serObj <- FindClusters(object = serObj, resolution = resolution, verbose = verbose)
-    serObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = serObj)
+    SerObj <- FindClusters(object = SerObj, resolution = resolution, verbose = verbose)
+    SerObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = SerObj)
   }
-  return(serObj)
+  return(SerObj)
 }
 
 
@@ -119,7 +119,7 @@ SpatialSer.SlideSeq.local = function(dge.path=NULL,
 #'
 #' This function takes in a seurat object and applies various transformations and clustering algorithms. The end goal is to identify cell types and subpopulations within the data.
 #'
-#' @param serObj A seurat object containing single cell transcriptomics data
+#' @param SerObj A seurat object containing single cell transcriptomics data
 #' @param ncells The number of cells used to build NB regression, default is 3000
 #' @param assay The assay used to run the SCT transformation, default is "Spatial"
 #' @param dims The dimensions to use for running PCA, t-SNE, UMAP, default is 1:30
@@ -127,22 +127,22 @@ SpatialSer.SlideSeq.local = function(dge.path=NULL,
 #' @param clusterResolutions A numeric vector of resolutions to use for finding clusters, default is c(0.2, 0.4, 0.6, 0.8, 1.2)
 #' @return A seurat object with added dimensionality reductions, clustering, and cell type annotations.
 #' @export
-process_SCTbase = function(serObj = NULL, ncells = 3000, assay = "Spatial",
+process_SCTbase = function(SerObj = NULL, ncells = 3000, assay = "Spatial",
                            dims=1:30, verbose = T, clusterResolutions = c(0.2, 0.4, 0.6, 0.8, 1.2)){
   print("SCT transformation start")
-  serObj <- SCTransform(serObj, assay = assay, 
+  SerObj <- SCTransform(SerObj, assay = assay, 
                         ncells = ncells, # of cells used to build NB regression def is 5000
                         verbose = verbose)
   print("Running PCA start")
-  serObj <- RunPCA(serObj)
-  serObj <- RunTSNE(serObj, dims = dims, perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(serObj, perplexity = 30),  check_duplicates = FALSE)
+  SerObj <- RunPCA(SerObj)
+  SerObj <- RunTSNE(SerObj, dims = dims, perplexity = CellMembrane:::.InferPerplexityFromSeuratObj(SerObj, perplexity = 30),  check_duplicates = FALSE)
   print("Running UMAP start")
-  serObj <- RunUMAP(serObj, dims = dims)
+  SerObj <- RunUMAP(SerObj, dims = dims)
   print("Running Clustering start")
-  serObj <- FindNeighbors(serObj, dims = dims)
+  SerObj <- FindNeighbors(SerObj, dims = dims)
   for (resolution in clusterResolutions) {
-    serObj <- FindClusters(object = serObj, resolution = resolution, verbose = verbose)
-    serObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = serObj)
+    SerObj <- FindClusters(object = SerObj, resolution = resolution, verbose = verbose)
+    SerObj[[paste0("ClusterNames_", resolution)]] <- Idents(object = SerObj)
   }
-  return(serObj)
+  return(SerObj)
 }

@@ -4,10 +4,10 @@
 \alias{plotPCgeneLoadings}
 \title{scatter-bubble style of selected PCs and genes}
 \usage{
-plotPCgeneLoadings(serObj, features, pcs = c(1, 2), quaT = 0.8, base_size = 10)
+plotPCgeneLoadings(SerObj, features, pcs = c(1, 2), quaT = 0.8, base_size = 10)
 }
 \arguments{
-\item{serObj}{a seurat obj}
+\item{SerObj}{a seurat obj}
 
 \item{features}{features to show}
 

@@ -5,8 +5,8 @@
 \title{Plot Violin Plots of Gene Expression by Group combo version}
 \usage{
 Plot_Pseudotime_V_Gene_combo(
-  seuratObj,
-  SortByName,
+  SerObj,
+  SerObjrtByName,
   Feats_pos = NULL,
   Feats_neg = NULL,
   base_size = 20,
@@ -20,7 +20,7 @@ Plot_Pseudotime_V_Gene_combo(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object containing the data to plot.}
+\item{SerObj}{A Seurat object containing the data to plot.}
 
 \item{Feats_pos}{The name of the feature to plot from pos side}
 
@@ -40,7 +40,7 @@ Plot_Pseudotime_V_Gene_combo(
 
 \item{GrpFacLevels}{The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.}
 
-\item{comparisons}{A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.}
+\item{compariSerObjns}{A list of compariSerObjns to perform using \code{stat_compare_means}. Each compariSerObjn should be a vector of two group names.}
 
 \item{xlab}{(Optional) The x-axis label.}
 

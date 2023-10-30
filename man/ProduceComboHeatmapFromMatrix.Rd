@@ -5,7 +5,7 @@
 \title{Produce Combo Heatmap From Matrix}
 \usage{
 ProduceComboHeatmapFromMatrix(
-  seuratObj,
+  SerObj,
   mat,
   markerVec,
   pairedList,
@@ -26,7 +26,7 @@ ProduceComboHeatmapFromMatrix(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object containing the single-cell RNA-seq data.}
+\item{SerObj}{A Seurat object containing the single-cell RNA-seq data.}
 
 \item{mat}{A matrix object containing the data for generating the heatmap.}
 
@@ -36,7 +36,7 @@ ProduceComboHeatmapFromMatrix(
 
 \item{pairedList2}{A list of paired conditions for the second set of markers.}
 
-\item{labelColumn}{A column name or index in the metadata of seuratObj to be used as labels for the heatmap.}
+\item{labelColumn}{A column name or index in the metadata of SerObj to be used as labels for the heatmap.}
 
 \item{prefix}{A prefix for the output file name.}
 

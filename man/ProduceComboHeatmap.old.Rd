@@ -5,7 +5,7 @@
 \title{Produce a combination heatmap old ver}
 \usage{
 ProduceComboHeatmap.old(
-  seuratObj,
+  SerObj,
   markerVec,
   pairedList,
   pairedList2 = NULL,
@@ -29,7 +29,7 @@ ProduceComboHeatmap.old(
 )
 }
 \arguments{
-\item{seuratObj}{A seurat object}
+\item{SerObj}{A seurat object}
 
 \item{markerVec}{A vector of markers}
 

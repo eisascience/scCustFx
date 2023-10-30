@@ -5,12 +5,12 @@
 \title{Perform unsupervised clustering and UMAP reduction}
 \usage{
 UnsupClust_UMAP_proc(
-  SerObject,
+  SerObj,
   doClust = T,
   Feats = NULL,
   reduction = NULL,
   dims = NULL,
-  resolution = 0.4,
+  reSerObjlution = 0.4,
   verbose = F,
   random.seed = 1234,
   doUMAP = T,
@@ -23,7 +23,7 @@ UnsupClust_UMAP_proc(
 )
 }
 \arguments{
-\item{SerObject}{A Seurat obj}
+\item{SerObj}{A Seurat obj}
 
 \item{doClust}{Logical if F unsupervised clustering is only done default (T)}
 
@@ -33,7 +33,7 @@ UnsupClust_UMAP_proc(
 
 \item{dims}{The number of dimensions to use for the reduction. If NULL, the default number of dimensions for the chosen method is used.}
 
-\item{resolution}{The UMAP resolution parameter.}
+\item{reSerObjlution}{The UMAP reSerObjlution parameter.}
 
 \item{verbose}{A boolean indicating whether to print progress updates during the clustering process.}
 

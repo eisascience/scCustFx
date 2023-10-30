@@ -4,10 +4,10 @@
 \alias{getFeatWindows}
 \title{Get feature windows}
 \usage{
-getFeatWindows(SerObject, feat, group.by)
+getFeatWindows(SerObj, feat, group.by)
 }
 \arguments{
-\item{SerObject}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{feat}{A character vector representing the feature name.}
 

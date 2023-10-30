@@ -5,7 +5,7 @@
 \title{Subset a Seurat object by coordinates and find DE genes}
 \usage{
 FindAllMarkers_SubsetCoord(
-  so,
+  SerObj,
   reduction_method = "tSNE",
   x_range = c(-1, 1),
   y_range = c(-1, 1),
@@ -19,7 +19,7 @@ FindAllMarkers_SubsetCoord(
 )
 }
 \arguments{
-\item{so}{A Seurat object to subset}
+\item{SerObj}{A Seurat object to subset}
 
 \item{reduction_method}{Character input for the dimensionality reduction method to subset by. Accepts "tSNE", "UMAP", or "PCA". Default is "tSNE"}
 
@@ -48,5 +48,5 @@ A list of differentially expressed genes
 This function subsets a Seurat object by the coordinates of a dimensionality reduction, such as tSNE, UMAP, or PCA, and finds differentially expressed genes in the subsetted object.
 }
 \examples{
-DEgenes_unsupclusts <- SubsetSerAndFindDEGenes(so = pbmc, reduction_method = "tSNE", x_range = c(-10, 10), y_range = c(-20, 20), savePathName = "DEgenes_unsupclusts.rds")
+DEgenes_unsupclusts <- SubsetSerAndFindDEGenes(SerObj = pbmc, reduction_method = "tSNE", x_range = c(-10, 10), y_range = c(-20, 20), savePathName = "DEgenes_unsupclusts.rds")
 }

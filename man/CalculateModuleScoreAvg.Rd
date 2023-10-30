@@ -5,7 +5,7 @@
 \title{CalculateModuleScoreAvg}
 \usage{
 CalculateModuleScoreAvg(
-  seuratObj,
+  SerObj,
   genes.list = NULL,
   genes.pool = NULL,
   n.bin = 25,
@@ -15,7 +15,7 @@ CalculateModuleScoreAvg(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{genes.list}{A character vector specifying the genes to calculate the module scores.}
 

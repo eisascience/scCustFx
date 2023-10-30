@@ -5,7 +5,7 @@
 \title{Plot RNA heatmap v2, no re-normalization of the data}
 \usage{
 make_RNA_heatmap2(
-  seuratObj,
+  SerObj,
   labelColumn = "ClusterNames_0.2",
   markerVec = NULL,
   assay = "RNA",
@@ -28,7 +28,7 @@ make_RNA_heatmap2(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{labelColumn}{Column for cell labels.}
 

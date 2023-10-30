@@ -5,7 +5,7 @@
 \title{BetterViolins}
 \usage{
 BetterViolins(
-  serobj = NULL,
+  SerObj = NULL,
   feature2plot = "nCount_RNA",
   featuredummy = "nFeature_RNA",
   group.by = "ExpID",
@@ -16,7 +16,7 @@ BetterViolins(
 )
 }
 \arguments{
-\item{serobj}{a data frame or a Seurat object containing the expression data}
+\item{SerObj}{a data frame or a Seurat object containing the expression data}
 
 \item{feature2plot}{a string indicating the feature to plot on the y-axis (default: "nCount_RNA")}
 

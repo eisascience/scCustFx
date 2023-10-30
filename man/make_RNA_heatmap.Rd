@@ -5,7 +5,7 @@
 \title{Make an RNA heatmap}
 \usage{
 make_RNA_heatmap(
-  seuratObj,
+  SerObj,
   markerVec,
   labelColumn,
   rowsplit = NULL,
@@ -28,7 +28,7 @@ make_RNA_heatmap(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object.}
+\item{SerObj}{A Seurat object.}
 
 \item{markerVec}{A vector of marker genes.}
 

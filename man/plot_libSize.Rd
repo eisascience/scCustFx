@@ -5,7 +5,7 @@
 \title{plot_libSize}
 \usage{
 plot_libSize(
-  so,
+  SerObj,
   assay = "ADT",
   slot = "counts",
   featureSplit = NULL,
@@ -13,7 +13,7 @@ plot_libSize(
 )
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{assay}{Assay within the seurat object}
 

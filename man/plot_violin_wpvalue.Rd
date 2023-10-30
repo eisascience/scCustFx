@@ -5,20 +5,20 @@
 \title{Plot violin plots with Wilcoxon p-values}
 \usage{
 plot_violin_wpvalue(
-  seuratObj,
+  SerObj,
   feature,
   group.by = "ident",
   slot = "data",
   GrpFacLevels = NULL,
   assay = "RNA",
   colors = col_vector,
-  comparisons = NULL,
+  compariSerObjns = NULL,
   title = "",
   doJitter = T
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object containing the data.}
+\item{SerObj}{A Seurat object containing the data.}
 
 \item{feature}{The feature to plot.}
 
@@ -32,7 +32,7 @@ plot_violin_wpvalue(
 
 \item{colors}{A vector of colors to use for the plot.}
 
-\item{comparisons}{A list of pairwise comparisons to perform.}
+\item{compariSerObjns}{A list of pairwise compariSerObjns to perform.}
 
 \item{title}{A string to use as the plot title.}
 

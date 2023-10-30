@@ -5,7 +5,7 @@
 \title{compressSerHD5}
 \usage{
 compressSerHD5(
-  so = NULL,
+  SerObj = NULL,
   load.path = NULL,
   overwrite = F,
   save.path = NULL,
@@ -14,7 +14,7 @@ compressSerHD5(
 )
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{load.path}{the path to a seurat .rds file}
 
@@ -22,7 +22,7 @@ compressSerHD5(
 
 \item{save.path}{the path to the desired hd5 seurat file. Default is NULL which then load.path is used to save the new object next to it.}
 
-\item{updateSerObj}{default F if T runs UpdateSeuratObject()}
+\item{updateSerObj}{default F if T runs UpdateSerObj()}
 
 \item{returnSerObj}{default F if T returns the Seurat object to be used in a pipeline}
 }

@@ -27,7 +27,7 @@ create_grouped_plot(
 
 \item{raster}{Logical, indicating whether raster graphics should be used. Default is FALSE.}
 
-\item{raster.dpi}{A numeric vector of length 2 indicating the resolution of the raster 
+\item{raster.dpi}{A numeric vector of length 2 indicating the reSerObjlution of the raster 
 graphics. Default is c(2000, 2000).}
 
 \item{pt.size}{The size of the points in the plot. Default is 0.5.}

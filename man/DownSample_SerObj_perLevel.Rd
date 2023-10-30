@@ -4,10 +4,10 @@
 \alias{DownSample_SerObj_perLevel}
 \title{DownSample_SerObj_perLevel}
 \usage{
-DownSample_SerObj_perLevel(so, featureSplit = NULL, totalCell = 300)
+DownSample_SerObj_perLevel(SerObj, featureSplit = NULL, totalCell = 300)
 }
 \arguments{
-\item{so}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 
 \item{featureSplit}{a feature of seurat object to split. "BarcodePrefix" # this is a good way to sample per seq run if possible}
 

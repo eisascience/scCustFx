@@ -22,7 +22,7 @@ gg_barplot_2waytable(
 \arguments{
 \item{MyTable}{A 2way table (base R table())}
 
-\item{Title}{A title else ''}
+\item{Title}{A title else ""}
 
 \item{legend.position}{legend position defautl "bottom"}
 

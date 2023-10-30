@@ -45,7 +45,7 @@ Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
 #' @param color_values A vector of color values for the groups.
 #' @param alpha The alpha (transparency) value for the points. Default is 0.3.
 #' @param raster Logical, indicating whether raster graphics should be used. Default is FALSE.
-#' @param raster.dpi A numeric vector of length 2 indicating the resolution of the raster 
+#' @param raster.dpi A numeric vector of length 2 indicating the reSerObjlution of the raster 
 #'   graphics. Default is c(2000, 2000).
 #' @param pt.size The size of the points in the plot. Default is 0.5.
 #' @param base_size The base font size for the plot. Default is 10.
@@ -114,7 +114,7 @@ Bool.CellsGT <- function(SerObj, thresh, slot = "data", assay = "RNA", gene=NULL
 #'
 #' This function calculates the module scores for each cell in a Seurat object based on the average expression of a given gene list.
 #'
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param genes.list A character vector specifying the genes to calculate the module scores.
 #' @param genes.pool A character vector specifying the genes to use for calculating the average expression.
 #' @param n.bin An integer specifying the number of bins for partitioning the average expression values.
@@ -123,7 +123,7 @@ Bool.CellsGT <- function(SerObj, thresh, slot = "data", assay = "RNA", gene=NULL
 #' @param seed.use An integer specifying the seed value for random number generation.
 #'
 #' @export
-CalculateModuleScoreAvg <- function (seuratObj, genes.list = NULL, genes.pool = NULL, n.bin = 25, 
+CalculateModuleScoreAvg <- function (SerObj, genes.list = NULL, genes.pool = NULL, n.bin = 25, 
                                      ctrl.size = 100, assay = NULL, seed.use = 1) 
 {
   set.seed(seed = seed.use)
@@ -132,21 +132,21 @@ CalculateModuleScoreAvg <- function (seuratObj, genes.list = NULL, genes.pool = 
     stop("Missing input gene list")
   }
   if (is.null(assay)) {
-    assay <- Seurat::DefaultAssay(seuratObj)
+    assay <- Seurat::DefaultAssay(SerObj)
   }
-  genes.list <- intersect(x = genes.list, y = rownames(seuratObj))
+  genes.list <- intersect(x = genes.list, y = rownames(SerObj))
   if (length(genes.list) == 0) {
     print(paste0("No matching genes found in the seurat object from the gene list, attempting to match case."))
-    genes.list <- Seurat::CaseMatch(genes.old, match = rownames(seuratObj))
+    genes.list <- Seurat::CaseMatch(genes.old, match = rownames(SerObj))
   }
   if (length(genes.list) == 0) {
     print(paste0("No matching genes found in the seurat object from the gene list, aborting"))
     return(NA)
   }
   if (is.null(x = genes.pool)) {
-    genes.pool = rownames(seuratObj)
+    genes.pool = rownames(SerObj)
   }
-  data.avg <- Matrix::rowMeans(Seurat::GetAssayData(seuratObj, 
+  data.avg <- Matrix::rowMeans(Seurat::GetAssayData(SerObj, 
                                                     assay = assay)[genes.pool, ])
   data.avg <- data.avg[order(data.avg)]
   data.cut <- as.numeric(x = Hmisc::cut2(x = data.avg, m = round(x = length(x = data.avg)/n.bin)))
@@ -159,13 +159,13 @@ CalculateModuleScoreAvg <- function (seuratObj, genes.list = NULL, genes.pool = 
   }
   ctrl.use <- unique(ctrl.use)
   ctrl.scores <- matrix(data = numeric(length = 1L), nrow = length(x = ctrl.use), 
-                        ncol = ncol(x = Seurat::GetAssayData(seuratObj, assay = assay)))
-  data <- Seurat::GetAssayData(seuratObj, assay = assay)
+                        ncol = ncol(x = Seurat::GetAssayData(SerObj, assay = assay)))
+  data <- Seurat::GetAssayData(SerObj, assay = assay)
   ctrl.scores <- Matrix::colMeans(x = data[ctrl.use, , drop = F])
   genes.scores <- Matrix::colMeans(x = data[genes.list, , drop = FALSE])
   
   
-  return(data.frame(CellBarcode = colnames(x = Seurat::GetAssayData(seuratObj, 
+  return(data.frame(CellBarcode = colnames(x = Seurat::GetAssayData(SerObj, 
                                                                     assay = assay)), Score = (genes.scores - ctrl.scores)))
 }
 
@@ -183,7 +183,7 @@ CalculateModuleScoreAvg <- function (seuratObj, genes.list = NULL, genes.pool = 
 #' @return ggplot viz of ranking per group
 #' 
 #' @export
-Rank_Swarm <- function(SerObj, RankFeat, group.by, title = "Cell sorted", color.by = NULL){
+Rank_Swarm <- function(SerObj, RankFeat, group.by, title = "Cell SerObjrted", color.by = NULL){
   
   #TODO if PC or UMAP RANKFeat given to pull that seperately 
   
@@ -220,7 +220,7 @@ Rank_Swarm <- function(SerObj, RankFeat, group.by, title = "Cell sorted", color.
 
 #' Perform dual-feature gating on a Seurat object
 #' 
-#' @param SerObject A Seurat object to perform gating on.
+#' @param SerObj A Seurat object to perform gating on.
 #' @param feat1 A character string representing the name of the first feature to gate on. Defaults to NULL.
 #' @param feat2 A character string representing the name of the second feature to gate on. Defaults to NULL.
 #' @param thr1 A numeric threshold value for the first feature. Defaults to 0.
@@ -233,7 +233,7 @@ Rank_Swarm <- function(SerObj, RankFeat, group.by, title = "Cell sorted", color.
 #' @return A Seurat object with the compGate metadata column added if \code{returnSerObj} is TRUE, otherwise a character vector of gated cell names.
 #' 
 #' @export
-DualFeatGate <- function(SerObject, 
+DualFeatGate <- function(SerObj, 
                          feat1 = NULL, 
                          feat2 = NULL, 
                          thr1 = 0, thr2 = 0, 
@@ -243,8 +243,8 @@ DualFeatGate <- function(SerObject,
                          label = F, label.size = 6, repel = T, 
                          raster = F) {
   
-  score1 <- SerObject[[feat1]]
-  score2 <- SerObject[[feat2]]
+  score1 <- SerObj[[feat1]]
+  score2 <- SerObj[[feat2]]
   
   if(dir1=="pos") {
     cells1 <- rownames(score1)[score1[,1] >= thr1]
@@ -258,13 +258,13 @@ DualFeatGate <- function(SerObject,
     cells2 <- rownames(score2)[score2[,1] <= thr2]
   }
   
-  SerObject[["compGate"]] <- "neither"
-  SerObject[["compGate"]][cells1,] <- feat1
-  SerObject[["compGate"]][cells2,] <- feat2
-  SerObject[["compGate"]][intersect(cells1, cells2),] <- "both"
+  SerObj[["compGate"]] <- "neither"
+  SerObj[["compGate"]][cells1,] <- feat1
+  SerObj[["compGate"]][cells2,] <- feat2
+  SerObj[["compGate"]][intersect(cells1, cells2),] <- "both"
   
   if(plotDimplot){
-    p <- DimPlot(SerObject, 
+    p <- DimPlot(SerObj, 
                  group.by = "compGate",
                  cols = cols, 
                  reduction = reduction,
@@ -277,7 +277,7 @@ DualFeatGate <- function(SerObject,
   }
   
   if(returnSerObj) {
-    return(SerObject)
+    return(SerObj)
   } else {
     return(  p  )
   }
@@ -288,7 +288,7 @@ DualFeatGate <- function(SerObject,
 
 #' Perform dual-feature gating on a Seurat object
 #' 
-#' @param SerObject A Seurat object to perform gating on.
+#' @param SerObj A Seurat object to perform gating on.
 #' @param feat1 A character string representing the name of the first feature to gate on. Defaults to NULL.
 #' @param feat2 A character string representing the name of the second feature to gate on. Defaults to NULL.
 #' @param thr1 A numeric threshold value for the first feature. Defaults to 0.
@@ -301,14 +301,14 @@ DualFeatGate <- function(SerObject,
 #' @return A Seurat object with the compGate metadata column added if \code{returnSerObj} is TRUE, otherwise a character vector of gated cell names.
 #' 
 #' @export
-SingleFeatGate <- function(SerObject, 
+SingleFeatGate <- function(SerObj, 
                          feat1 = NULL, 
                          thr1 = 0, 
                          dir1 = "pos",
                          cols = c("maroon", "gray"),
                          plotDimplot = T, returnSerObj=T) {
   
-  score1 <- SerObject[[feat1]]
+  score1 <- SerObj[[feat1]]
 
   if(dir1=="pos") {
     cells1 <- rownames(score1)[score1[,1] >= thr1]
@@ -317,11 +317,11 @@ SingleFeatGate <- function(SerObject,
   }
   
   
-  SerObject[["compGate"]] <- "not"
-  SerObject[["compGate"]][cells1,] <- feat1
+  SerObj[["compGate"]] <- "not"
+  SerObj[["compGate"]][cells1,] <- feat1
 
   if(plotDimplot){
-    p <- DimPlot(SerObject, 
+    p <- DimPlot(SerObj, 
                  group.by = "compGate",
                  cols = cols, 
                  label = F, label.size = 6, repel = T, 
@@ -333,9 +333,9 @@ SingleFeatGate <- function(SerObject,
   }
   
   if(returnSerObj) {
-    return(SerObject)
+    return(SerObj)
   } else {
-    return(  SerObject[["compGate"]]  )
+    return(  SerObj[["compGate"]]  )
   }
   
 }
@@ -347,7 +347,7 @@ SingleFeatGate <- function(SerObject,
 #'
 #' This function generates feature windows for a given feature and groups in a Seurat object.
 #'
-#' @param SerObject A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param feat A character vector representing the feature name.
 #' @param group.by A character vector representing the group to use for grouping the data.
 #'
@@ -359,11 +359,11 @@ SingleFeatGate <- function(SerObject,
 #'
 #'
 #' @export
-getFeatWindows <- function(SerObject, feat, group.by){
+getFeatWindows <- function(SerObj, feat, group.by){
   
   
   
-  v1 <- Seurat:::VlnPlot(SerObject, features = feat, group.by = group.by, flip = T) #timepoint
+  v1 <- Seurat:::VlnPlot(SerObj, features = feat, group.by = group.by, flip = T) #timepoint
   
   v1 <- v1$data
   colnames(v1) = c("Feat", "Grp")
@@ -432,7 +432,7 @@ getFeatWindows <- function(SerObject, feat, group.by){
 #' This function generates a scatter plot of the specified dimensions (features) of a Seurat object,
 #' colored by expression values of the specified feature.
 #'
-#' @param SerObject A Seurat object containing the data to plot
+#' @param SerObj A Seurat object containing the data to plot
 #' @param dim1 Name of the first feature to plot on the x-axis
 #' @param dim2 Name of the second feature to plot on the y-axis
 #' @param pt.size Point size for the plot (default: 1)
@@ -444,16 +444,16 @@ getFeatWindows <- function(SerObject, feat, group.by){
 #' @return A ggplot object
 #' 
 #' @export
-FeaturePlot_cust <- function(SerObject, dim1, dim2, pt.size = 1, 
+FeaturePlot_cust <- function(SerObj, dim1, dim2, pt.size = 1, 
                              group.by, Feat, colors=c('white', 'gray', 'gold', 'red', 'maroon'), 
                              base_size = 14) {
   
-  gg1 <- suppressMessages(Seurat::FeatureScatter(SerObject, feature1 = dim1, 
+  gg1 <- suppressMessages(Seurat::FeatureScatter(SerObj, feature1 = dim1, 
                                                  feature2 = dim2, 
                                                  group.by = group.by))
   
   
-  gg1$data$GeneExpr <- FetchData(SerObject, Feat, slot = "data")[rownames(gg1$data), 1]
+  gg1$data$GeneExpr <- FetchData(SerObj, Feat, slot = "data")[rownames(gg1$data), 1]
   
   gg1$data <- gg1$data[order(gg1$data$GeneExpr, decreasing = F), ]
   
@@ -469,11 +469,11 @@ FeaturePlot_cust <- function(SerObject, dim1, dim2, pt.size = 1,
 #'
 #' This function performs unsupervised clustering on single-cell RNA-seq data and then it does the Uniform Manifold Approximation and Projection (UMAP) dimensionality reduction method. It returns and updated seurat object.
 #'
-#' @param SerObject A Seurat obj
+#' @param SerObj A Seurat obj
 #' @param Feats A vector of character strings specifying which features to use for clustering. If NULL, all features are used.
 #' @param reduction The type of dimensionality reduction to apply. If NULL, no reduction is applied. Options are "PCA", "TSNE", "UMAP", or "none".
 #' @param dims The number of dimensions to use for the reduction. If NULL, the default number of dimensions for the chosen method is used.
-#' @param resolution The UMAP resolution parameter.
+#' @param reSerObjlution The UMAP reSerObjlution parameter.
 #' @param verbose A boolean indicating whether to print progress updates during the clustering process.
 #' @param random.seed The random seed to use for reproducibility.
 #' @param doUMAP Logical if F unsupervised clustering is only done default (T)
@@ -488,12 +488,12 @@ FeaturePlot_cust <- function(SerObject, dim1, dim2, pt.size = 1,
 #' @return seurat obj
 #'
 #' @export
-UnsupClust_UMAP_proc <- function(SerObject, 
+UnsupClust_UMAP_proc <- function(SerObj, 
                                  doClust = T,
                                  Feats = NULL, #character names
                                  reduction = NULL,
                                  dims = NULL, #numeric 
-                                 resolution = 0.4, 
+                                 reSerObjlution = 0.4, 
                                  verbose = F,
                                  random.seed = 1234,
                                  doUMAP = T, 
@@ -501,32 +501,32 @@ UnsupClust_UMAP_proc <- function(SerObject,
                                  n.neighbors = 60, n.epochs = 300,
                                  min.dist = 0.2, spread = 1,
                                  reduction.key = 'UMAPCust_'){
-  if(!doClust & !doUMAP ) stop("choose something to do cluster or umap")
+  if(!doClust & !doUMAP ) stop("choose SerObjmething to do cluster or umap")
   
   if(doClust){
     print("Finding Neighbors")
-    SerObject <- FindNeighbors(SerObject, 
+    SerObj <- FindNeighbors(SerObj, 
                                reduction = reduction, 
                                dims = dims, 
                                verbose = verbose)
     
     print("Finding Clusters")
-    SerObject <- FindClusters(object = SerObject,
-                              resolution = resolution,
+    SerObj <- FindClusters(object = SerObj,
+                              reSerObjlution = reSerObjlution,
                               verbose = verbose,
                               random.seed = random.seed)
     
     print("Updating Ser Obj with:")
-    print(paste0("ClusterNames", reduction, "_", resolution))
+    print(paste0("ClusterNames", reduction, "_", reSerObjlution))
     
-    SerObject[[paste0("ClusterNames", reduction, "_", resolution)]] <- Idents(object = SerObject)
+    SerObj[[paste0("ClusterNames", reduction, "_", reSerObjlution)]] <- Idents(object = SerObj)
     
   }
   
   
   
   if(doUMAP){
-    UMAPDF = scCustFx:::RunUMAP.Matrix(DGEmat = SerObject@meta.data[, Feats],
+    UMAPDF = scCustFx:::RunUMAP.Matrix(DGEmat = SerObj@meta.data[, Feats],
                                        n_threads = 8,
                                        assay = NULL,
                                        n.neighbors = n.neighbors, #40
@@ -553,14 +553,14 @@ UnsupClust_UMAP_proc <- function(SerObject,
     
     
     
-    SerObject[[obID]] = Seurat::CreateDimReducObject(
+    SerObj[[obID]] = Seurat::CreateDimReducObject(
       embeddings = UMAPDF, 
       key = paste0(tolower(gsub("_", "", obID)), "_"), 
       assay = NULL, global = TRUE)
   }
   
   
-  return(SerObject)
+  return(SerObj)
   
 }
 
@@ -568,7 +568,7 @@ UnsupClust_UMAP_proc <- function(SerObject,
 #'
 #' A function to perform differential expression analysis using BiSplit algorithm.
 #'
-#' @param SerObject An object of class Seurat
+#' @param SerObj An object of class Seurat
 #' @param gate_feat A character vector of feature names to use as gatekeepers for the BiSplit algorithm.
 #' @param gate_thr The threshold value for the gatekeepers. Default is 0.
 #' @param plot_DimPlot Logical value indicating whether to generate a DimPlot of the results. Default is FALSE.
@@ -585,7 +585,7 @@ UnsupClust_UMAP_proc <- function(SerObject,
 #' @return A DF containing the results of the differential expression analysis.
 #'
 #' @export
-BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0, 
+BiSplit_DE <- function(SerObj, gate_feat = NULL, gate_thr = 0, 
                        plot_DimPlot = F, doDE = T,
                        cols = c("gray", "red"), raster = F, 
                                 assay = "RNA", slot = "data",
@@ -594,18 +594,18 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
   
   if(is.null(gate_feat)) stop("gate_feat is null")
   
-  SerObject$DE_bool = ifelse(SerObject[[gate_feat]] >= 0, "R", "L") #right or left of
+  SerObj$DE_bool = ifelse(SerObj[[gate_feat]] >= 0, "R", "L") #right or left of
   
   
   if(plot_DimPlot) {
-    print(DimPlot(SerObject, group.by = "DE_bool",
+    print(DimPlot(SerObj, group.by = "DE_bool",
                   cols = cols, 
                   label = F, label.size = 6, repel = T, raster = raster) + NoLegend())
     
   } else {
     if(!doDE) {
       print("plot_DimPlot is F doDE = F :: setting plot_DimPlot = T")
-      print(DimPlot(SerObject, group.by = "DE_bool",
+      print(DimPlot(SerObj, group.by = "DE_bool",
                     cols = cols, 
                     label = F, label.size = 6, repel = T, raster = raster) + NoLegend())
     }
@@ -614,11 +614,11 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
   }
   
   if(doDE) {
-    DefaultAssay(SerObject)  = assay
-    Idents(SerObject) = "DE_bool"
+    DefaultAssay(SerObj)  = assay
+    Idents(SerObj) = "DE_bool"
     
     
-    DEgenes_unsupclusts = FindMarkers(SerObject,
+    DEgenes_unsupclusts = FindMarkers(SerObj,
                                       logfc.threshold = logfc.threshold,
                                       ident.1 = "R",
                                       ident.2 = "L",
@@ -639,7 +639,7 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
 
 #' Plot Violin Plots of Gene Expression by Group combo version
 #' 
-#' @param seuratObj A Seurat object containing the data to plot.
+#' @param SerObj A Seurat object containing the data to plot.
 #' @param Feats_pos The name of the feature to plot from pos side
 #' @param Feats_neg The name of the feature to plot from neg side
 #' @param group.by The name of the metadata field to group cells by.
@@ -647,7 +647,7 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
 #' @param cutGT  If TRUE (default), cells with a number of features greater than the median will be excluded from the plot. If FALSE, cells with a number of features less than or equal to the median will be excluded from the plot.
 #' @param ThrCut  The threshold for feature filtering. Cells with a value in the sdaCompName column greater than this threshold will be excluded from the plot. Default is 0, which will skip this step.
 #' @param GrpFacLevels  The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.
-#' @param comparisons  A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.
+#' @param compariSerObjns  A list of compariSerObjns to perform using \code{stat_compare_means}. Each compariSerObjn should be a vector of two group names.
 #' @param xlab (Optional) The x-axis label.
 #' @param ylab (Optional) The y-axis label.
 #' @param palette  The color palette to use for the plot.
@@ -659,22 +659,22 @@ BiSplit_DE <- function(SerObject, gate_feat = NULL, gate_thr = 0,
 #' 
 #' 
 #' @export
-Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL, Feats_neg = NULL, base_size = 20, col_vector = col_vector,
+Plot_Pseudotime_V_Gene_combo <- function(SerObj, SerObjrtByName, Feats_pos = NULL, Feats_neg = NULL, base_size = 20, col_vector = col_vector,
                                          showScatter = TRUE, downsampleScatter = TRUE, scatterAlpha = 0.5, 
                                          getWindows = T, decreasing=F,  group.by = "Population") {
   
   if (is.null(Feats_pos) && is.null(Feats_neg))
     stop("Enter values for Feats_pos or Feats_neg")
   
-  tempDF <- Seurat::FetchData(seuratObj, SortByName)
+  tempDF <- Seurat::FetchData(SerObj, SerObjrtByName)
   tempDF$orig.ord <- 1:nrow(tempDF)
   tempDF <- tempDF[order(tempDF[, 1], decreasing = decreasing), , drop = FALSE]
   tempDF$ord <- 1:nrow(tempDF)
   
   if(getWindows){
     
-    vlines = scCustFx::getFeatWindows( seuratObj, 
-                                       feat = SortByName, 
+    vlines = scCustFx::getFeatWindows( SerObj, 
+                                       feat = SerObjrtByName, 
                                        group.by = group.by)$vlines
     tempDF$bin = "low"
     
@@ -696,10 +696,10 @@ Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL
   
   if (!is.null(Feats_pos)) {
     if (length(Feats_pos) == 1) {
-      tempDF <- cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])
     } else if (length(Feats_pos) > 1) {
       
-      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])))
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])))
       
       # colnames(tempDF) <- c(baseColnames, Feats_pos)
     }
@@ -707,10 +707,10 @@ Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL
   
   if (!is.null(Feats_neg)) {
     if (length(Feats_neg) == 1) {
-      tempDF <- cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])
     } else if (length(Feats_neg) > 1) {
       
-      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])))
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])))
       # colnames(tempDF) <- c(baseColnames, Feats_neg)
     }
   }
@@ -734,10 +734,10 @@ Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL
   
   gg1 = gg1 + geom_smooth(aes(fill = feat_type), method = "auto", se = TRUE, level = 0.95) +
     scale_color_manual(values = c(col_vector[1:length(Feats_pos)], col_vector[1:length(Feats_neg)]), name = "Top Genes") +
-    scale_linetype_manual(values = c("dashed", "solid"), name = "Feature Type", guide = "none") +
+    scale_linetype_manual(values = c("dashed", "SerObjlid"), name = "Feature Type", guide = "none") +
     scale_fill_manual(values = c("skyblue2", "pink2"), name = "Feature Type", guide = "none") +
     theme_classic(base_size = base_size) +
-    ggtitle(SortByName) +
+    ggtitle(SerObjrtByName) +
     # scale_y_sqrt()+
     xlab("Sqrt-ordered score high -> low") +
     ylab("Gene Expression") 
@@ -759,14 +759,14 @@ Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL
 
 #' Plot Violin Plots of Gene Expression by Group
 #' 
-#' @param seuratObj A Seurat object containing the data to plot.
+#' @param SerObj A Seurat object containing the data to plot.
 #' @param Feature The name of the feature to plot.
 #' @param group.by The name of the metadata field to group cells by.
 #' @param NumFeatName The name of the variable containing the number of features for each cell. If provided, cells with a number of features greater than the median will be excluded from the plot.
 #' @param cutGT  If TRUE (default), cells with a number of features greater than the median will be excluded from the plot. If FALSE, cells with a number of features less than or equal to the median will be excluded from the plot.
 #' @param ThrCut  The threshold for feature filtering. Cells with a value in the sdaCompName column greater than this threshold will be excluded from the plot. Default is 0, which will skip this step.
 #' @param GrpFacLevels  The levels of the factor variable to use for grouping. If NULL (default), all levels will be included.
-#' @param comparisons  A list of comparisons to perform using \code{stat_compare_means}. Each comparison should be a vector of two group names.
+#' @param compariSerObjns  A list of compariSerObjns to perform using \code{stat_compare_means}. Each compariSerObjn should be a vector of two group names.
 #' @param xlab (Optional) The x-axis label.
 #' @param ylab (Optional) The y-axis label.
 #' @param palette  The color palette to use for the plot.
@@ -776,20 +776,20 @@ Plot_Pseudotime_V_Gene_combo <- function(seuratObj, SortByName, Feats_pos = NULL
 #' 
 #' 
 #' @export
-plot_violin_wFeatFilter <- function(seuratObj, Feature, group.by, 
+plot_violin_wFeatFilter <- function(SerObj, Feature, group.by, 
                                     NumFeatName = NULL, 
                                     cutGT = T,
                                     ThrCut = 0, 
                                     GrpFacLevels=NULL,
-                                    comparisons = NULL, xlab="", ylab="", 
+                                    compariSerObjns = NULL, xlab="", ylab="", 
                                     palette = col_vector, addJitter = F) {
   
   
-  v1 <- Seurat:::VlnPlot(seuratObj, 
+  v1 <- Seurat:::VlnPlot(SerObj, 
                          features = Feature, 
                          group.by = group.by, flip = T) 
   
-  scoreDF <- seuratObj[[NumFeatName]]
+  scoreDF <- SerObj[[NumFeatName]]
   
   if(cutGT) {
     KeepCells <- scoreDF[scoreDF[,1] > ThrCut, , drop=F] %>% rownames()
@@ -822,10 +822,10 @@ plot_violin_wFeatFilter <- function(seuratObj, Feature, group.by,
   }
   
   
-  if(!is.null(comparisons)){
+  if(!is.null(compariSerObjns)){
     ggv = ggv + ggpubr::stat_compare_means(label = "p.signif",
-                                           comparisons =
-                                             comparisons )
+                                           compariSerObjns =
+                                             compariSerObjns )
   }
   
   ggv = ggv + xlab(xlab) + ylab(ylab) + 
@@ -844,10 +844,10 @@ plot_violin_wFeatFilter <- function(seuratObj, Feature, group.by,
 
 #' Plot a scatter plot with smoothed lines for selected features
 #'
-#' This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SortByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
+#' This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SerObjrtByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
 #'
-#' @param seuratObj A Seurat object to plot.
-#' @param SortByName The name of the variable to use for sorting cells on the x-axis.
+#' @param SerObj A Seurat object to plot.
+#' @param SerObjrtByName The name of the variable to use for SerObjrting cells on the x-axis.
 #' @param Feats A vector of feature names to plot on the y-axis. Default is NULL, which will plot all features in the object.
 #' @param base_size Base size of points and lines. Default is 20.
 #' @param col_vector color vector
@@ -858,15 +858,15 @@ plot_violin_wFeatFilter <- function(seuratObj, Feature, group.by,
 #' @return A ggplot object.
 #'
 #' @examples
-#' Plot_Pseudotime_V_Gene(seuratObj, "nCount_RNA", c("TNFRSF4", "CD69"))
+#' Plot_Pseudotime_V_Gene(SerObj, "nCount_RNA", c("TNFRSF4", "CD69"))
 #'
 #' @export
-Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size = 20, col_vector=col_vector,
+Plot_Pseudotime_V_Gene <- function(SerObj, SerObjrtByName, Feats=NULL, base_size = 20, col_vector=col_vector,
                                    showScatter = T, dowsampleScatter = T, scatterAlpha = 0.5) {
   
   if(is.null(Feats)) stop("Enter values for Feats")
   
-  tempDF = Seurat::FetchData(seuratObj, SortByName)
+  tempDF = Seurat::FetchData(SerObj, SerObjrtByName)
   tempDF$orig.ord = 1:nrow(tempDF)
   tempDF = tempDF[order(tempDF[,1], decreasing = T), , drop=F]
   tempDF$ord = 1:nrow(tempDF)
@@ -876,11 +876,11 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   
   if(length(Feats) == 1){
     
-    tempDF = cbind(tempDF, Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
+    tempDF = cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
     
   } else if(length(Feats) > 1){
     
-    tempDF = cbind(tempDF, Matrix::as.matrix( Matrix::t(Seurat::GetAssayData(seuratObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)]) ) )
+    tempDF = cbind(tempDF, Matrix::as.matrix( Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)]) ) )
     
     colnames(tempDF) = c(baseColnames, Feats)
     
@@ -907,7 +907,7 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   gg1 + geom_smooth(method = "auto", se = TRUE, level = 0.95) +
     scale_color_manual(values = col_vector, name = "Feature")+
     theme_bw(base_size = base_size) + 
-    ggtitle(SortByName) + 
+    ggtitle(SerObjrtByName) + 
     xlab("Sqrt-ordered score high -> low") + 
     ylab ("Gene Expression")
   
@@ -924,8 +924,8 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   # # tempDF_long2$value = exp(tempDF_long2$value )^2
   # 
   # library(ggpubr)
-  # # Add pairwise comparisons p-value
-  # my_comparisons <- list(c("A", "B"), c("B", "C"), c("A", "C"))
+  # # Add pairwise compariSerObjns p-value
+  # my_compariSerObjns <- list(c("A", "B"), c("B", "C"), c("A", "C"))
   # 
   # 
   # # Create a box plot with colored segments
@@ -935,7 +935,7 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
   #   ggtitle("Gene Expression by Score Bins") +
   #   xlab("Score Bins") +
   #   ylab("Gene Expression") #+ 
-  #  # stat_compare_means(comparisons = my_comparisons, method = "wilcox.test",
+  #  # stat_compare_means(compariSerObjns = my_compariSerObjns, method = "wilcox.test",
   #  #                              label = "p.signif"
   #  #                              #label.y = max(tempDF_long$value) * 1.05
   #  #                              )
@@ -949,7 +949,7 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
 #'
 #' This function generates violin plots with customizable features.
 #'
-#' @param serobj a data frame or a Seurat object containing the expression data
+#' @param SerObj a data frame or a Seurat object containing the expression data
 #' @param feature2plot a string indicating the feature to plot on the y-axis (default: "nCount_RNA")
 #' @param featuredummy a string indicating a dummy feature to plot on the x-axis (default: "nFeature_RNA")
 #' @param group.by a string indicating the grouping variable (default: "ExpID")
@@ -960,20 +960,20 @@ Plot_Pseudotime_V_Gene <- function(seuratObj, SortByName, Feats=NULL, base_size 
 #'
 #' @return a ggplot object
 #' @export
-BetterViolins = function(serobj=NULL, 
+BetterViolins = function(SerObj=NULL, 
                          feature2plot = "nCount_RNA", 
                          featuredummy = "nFeature_RNA", 
                          group.by = "ExpID", 
                          downsampleN = 500, title="", ComplexPlot=F, log10Y=T){
   
-  if(is.null(serobj)) stop()
+  if(is.null(SerObj)) stop()
   
   if(!ComplexPlot) downsampleN = "none" # no need to downsample since ggstatplot is slow and needs downsampling 
   if(ComplexPlot) require(ggstatsplot)
   
   
   
-  ggScat1 = FeatureScatter(serobj, feature1 =feature2plot, feature2 = featuredummy, group.by = group.by)
+  ggScat1 = FeatureScatter(SerObj, feature1 =feature2plot, feature2 = featuredummy, group.by = group.by)
   
   plotLS = lapply(levels(ggScat1$data$colors), function(xL){
     #xL = "T1"
@@ -1070,26 +1070,26 @@ BetterViolins = function(serobj=NULL,
 #' This function generates a plot of violin plots with Wilcoxon p-values
 #' for the given feature and groupings in a Seurat object.
 #'
-#' @param seuratObj A Seurat object containing the data.
+#' @param SerObj A Seurat object containing the data.
 #' @param feature The feature to plot.
 #' @param group.by The grouping variable to use for the plot (default: "ident").
 #' @param slot The slot to use for the plot (default: "data").
 #' @param GrpFacLevels Optional vector of grouping factor levels to plot.
 #' @param assay The assay to use for the plot (default: "RNA").
 #' @param colors A vector of colors to use for the plot.
-#' @param comparisons A list of pairwise comparisons to perform.
+#' @param compariSerObjns A list of pairwise compariSerObjns to perform.
 #' @param title A string to use as the plot title.
 #' @param doJitter Whether to add jitter to the points (default: TRUE).
 #'
 #' @return A ggplot object.
 #' @export
-plot_violin_wpvalue <- function(seuratObj, 
+plot_violin_wpvalue <- function(SerObj, 
                                 feature, 
                                 group.by = "ident",
                                 slot="data", 
                                 GrpFacLevels=NULL,
                                 assay="RNA", 
-                                colors =col_vector, comparisons = NULL, title="",
+                                colors =col_vector, compariSerObjns = NULL, title="",
                                 doJitter = T){
   
   
@@ -1097,7 +1097,7 @@ plot_violin_wpvalue <- function(seuratObj,
   
   library(ggpubr)
   
-  v1 <- VlnPlot(seuratObj, features =feature, slot =slot, assay = assay, group.by=group.by)
+  v1 <- VlnPlot(SerObj, features =feature, slot =slot, assay = assay, group.by=group.by)
   
   v1 <- v1$data
   colnames(v1) = c("Feat", "Grp")
@@ -1107,9 +1107,9 @@ plot_violin_wpvalue <- function(seuratObj,
   }
   
   
-  if(!is.null(comparisons)){
+  if(!is.null(compariSerObjns)){
     
-    if(class(comparisons) != "list") stop("GrpNames needs to be a list")
+    if(class(compariSerObjns) != "list") stop("GrpNames needs to be a list")
     
     if(doJitter){
       ggviolin(v1, x = "Grp", y = "Feat", 
@@ -1118,13 +1118,13 @@ plot_violin_wpvalue <- function(seuratObj,
                add = "jitter",
                add.params = list(size = .005, alpha = 0.05),
                title = paste0("Wilcox p.value. :: ", title)) + 
-        stat_compare_means(comparisons = comparisons,
+        stat_compare_means(compariSerObjns = compariSerObjns,
                            label = "p.signif")
     } else {
       ggviolin(v1, x = "Grp", y = "Feat", fill = "Grp",
                palette=col_vector[1:length(levels(factor(v1$Grp)))],
                title = paste0("Wilcox p.value. :: ", title)) + 
-        stat_compare_means(comparisons = comparisons , label = "p.signif")
+        stat_compare_means(compariSerObjns = compariSerObjns , label = "p.signif")
     }
     
   } else {
@@ -1152,15 +1152,15 @@ plot_violin_wpvalue <- function(seuratObj,
 #'
 #'scatter-bubble style of selected PCs and genes
 #' 
-#' @param serObj a seurat obj 
+#' @param SerObj a seurat obj 
 #' @param features features to show
 #' @param pcs a numeric vector of 2 pc nnumbers e.g. c(1, 2) 
 #' @param base_size base_size of plot
 #' @param quaT color pink via quantiles
 #' @return ggplot scatter-bubble plot style 
 #' @export
-plotPCgeneLoadings = function(serObj, features, pcs = c(1, 2), quaT = 0.8, base_size =10){
-  tempDF = as.data.frame(serObj@reductions$pca@feature.loadings[features, pcs])
+plotPCgeneLoadings = function(SerObj, features, pcs = c(1, 2), quaT = 0.8, base_size =10){
+  tempDF = as.data.frame(SerObj@reductions$pca@feature.loadings[features, pcs])
   colnames(tempDF) = c("Dim1", "Dim2")
   tempDF$gene = rownames(tempDF)
   
@@ -1200,159 +1200,7 @@ plotPCgeneLoadings = function(serObj, features, pcs = c(1, 2), quaT = 0.8, base_
   
 }
 
-#' Plot 3D visualization of Seurat object
-#'
-#' @param seurat_obj A Seurat object
-#' @param feature1 The name of the first feature to plot along the x-axis
-#' @param feature2 The name of the second feature to plot along the y-axis
-#' @param feature3 The name of the third feature to plot along the z-axis
-#' @param color_feature The name of the feature to use for coloring the points (optional)
-#' @param cols The color palette to use for the points (optional)
-#' @param plot_title The title of the plot (optional)
-#'
-#' @return A 3D plotly visualization of the Seurat object
-#' @export
-plot3d_seurat <- function(seurat_obj, 
-                          feature1, feature2, feature3, 
-                          color_feature=NULL, 
-                          cols = colorRamp(c("navy", "red")), 
-                          plot_title="", slot = "data") {
-  library(plotly)
-  
-  
-  
-  # Check if feature1 is a gene name or metadata name
-  # if (feature1 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-  #   x <- seurat_obj@assays$RNA@data[feature1, ]
-  # } else if (feature1 %in% colnames(seurat_obj@meta.data)) {
-  #   x <- seurat_obj@meta.data[, feature1]
-  # } else {
-  #   stop(paste("Feature", feature1, "not found."))
-  # }
-  x = FetchData(SerObject, feature1, slot = slot)[,1]
-  
-  # Check if feature2 is a gene name or metadata name
-  # if (feature2 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-  #   y <- seurat_obj@assays$RNA@data[feature2, ]
-  # } else if (feature2 %in% colnames(seurat_obj@meta.data)) {
-  #   y <- seurat_obj@meta.data[, feature2]
-  # } else {
-  #   stop(paste("Feature", feature2, "not found."))
-  # }
-  y = FetchData(SerObject, feature2, slot = slot)[,1]
-  
-  # Check if feature3 is a gene name or metadata name
-  # if (feature3 %in% rownames(seurat_obj@assays$RNA@scale.data)) {
-  #   z <- seurat_obj@assays$RNA@data[feature3, ]
-  # } else if (feature3 %in% colnames(seurat_obj@meta.data)) {
-  #   z <- seurat_obj@meta.data[, feature3]
-  # } else {
-  #   stop(paste("Feature", feature3, "not found."))
-  # }
-  z = FetchData(SerObject, feature3, slot = slot)[,1]
-  
-  
-  tempDF = data.frame(x=x, y=y, z=z)
-  
-  # Set point colors if color_feature is specified
-  if (!is.null(color_feature)) {
-    
-    if (color_feature %in% colnames(seurat_obj@meta.data)) {
-      color_vals <- seurat_obj@meta.data[, color_feature]
-      tempDF$col = as.factor(color_vals)
-      p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, color = ~col, colors = cols, type = "scatter3d", mode = "markers", marker = list(size = 2))
-    } else {
-      GeneExpr = FetchData(SerObject, color_feature, slot = slot)[,1]
-      p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, 
-                   color = ~GeneExpr, colors = cols, 
-                   type = "scatter3d", mode = "markers", marker = list(size = 2))
-      
-    }
-  } else {
-    # Set default color
-    p <- plot_ly(tempDF, x = ~x, y = ~y, z = ~z, type = "scatter3d", mode = "markers", marker = list(size = 2))
-  }
-  
-  # Set plot title and axis labels
-  # plot_title <- paste(feature1, "vs", feature2, "vs", feature3)
-  x_axis_label <- feature1
-  y_axis_label <- feature2
-  z_axis_label <- feature3
-  
-  p <- layout(p, title = plot_title, scene = list(xaxis = list(title = x_axis_label), yaxis = list(title = y_axis_label), zaxis = list(title = z_axis_label)))
-  
-  return(p)
-}
 
-
-#' Calculate the percent expressed cells for each group in a Seurat object
-#'
-#' @param serobj A Seurat object
-#' @param group.by A meta feature used to group the cells
-#' @param features A vector of features (genes) to calculate the percent expressed cells for
-#' @param plot A logical indicating whether to plot 
-#' @param topN select top N genes  
-#' @param cols color vector
-#' @return A data frame with the percent expressed cells for each group and feature
-#' @export
-VlnPlot_subset <- function(serobj, group.by, features, plot=F, topN = 10, xlab = "",
-                           cols=c("#8DD3C7", "#33A02C", "#F4CAE4", "#A6CEE3", "#FDCDAC",
-                                  "#B2DF8A","#E78AC3", "#1F78B4", "#FB9A99", "#E31A1C", 
-                                  "#66C2A5", "#FF7F00"), addDimplot = T, returnLs = T){
-  
-  
-  #fix factor
-  serobj@meta.data[,group.by] = naturalsort::naturalfactor(as.character(serobj@meta.data[,group.by]))
-  
-  features = unique(features)
-
-  
-  PctExprDF =  scCustFx:::PercentExpressed(serobj, 
-                                           group.by=group.by, 
-                                           features=features, 
-                                           plot_perHM = plot)
-  
-  PctExprDF$max = apply(PctExprDF, 1, max)
-  PctExprDF$min = apply(PctExprDF, 1, min)
-  
-  PctExprDF$maxminDelta = PctExprDF$max-PctExprDF$min
-  
-  
-  Idents(serobj) = group.by
-  
-  vln <- VlnPlot(serobj, 
-          features = rownames( PctExprDF[order(PctExprDF$maxminDelta, decreasing = T)[1:topN],]), 
-          stack = TRUE, flip = TRUE, fill.by = "ident",
-          cols = cols) + NoLegend() + xlab(xlab) #+
-    # theme_classic(base_size = 14) 
-  
-  
-  if(addDimplot){
-    dim <- DimPlot(serobj, 
-            label = T, label.size = 10, label.box = T, repel = T,
-            cols=cols,
-            group.by=group.by) + 
-      coord_flip()  + scale_y_reverse() +
-      theme_classic(base_size = 14) + 
-      NoLegend() +
-      theme(axis.line = element_blank(),
-            axis.text.x = element_blank(),
-            axis.text.y = element_blank(),
-            axis.ticks = element_blank(),
-            axis.title = element_blank(),
-            plot.title = element_blank()
-      )
-    if(returnLs) {
-      list(dim=dim, vln=vln)
-    } else {
-      dim / vln
-    }
-  } else  {
-    vln
-  }
- 
-  
-}
 
 
 
@@ -1360,20 +1208,20 @@ VlnPlot_subset <- function(serobj, group.by, features, plot=F, topN = 10, xlab =
 
 #' Calculate the percent expressed cells for each group in a Seurat object
 #'
-#' @param so A Seurat object
+#' @param SerObj A Seurat object
 #' @param group.by A meta feature used to group the cells
 #' @param features A vector of features (genes) to calculate the percent expressed cells for
 #' @param plot_perHM A logical indicating whether to plot a heatmap of the results
 #' @return A data frame with the percent expressed cells for each group and feature
 #' @export
-PercentExpressed <- function(so, group.by, features, plot_perHM = F){
+PercentExpressed <- function(SerObj, group.by, features, plot_perHM = F){
   
   print("removing:")
-  print(features[!features %in% rownames(so)])
+  print(features[!features %in% rownames(SerObj)])
   
   
-  features = features[features %in% rownames(so)]
-  MyDot = DotPlot(so, group.by = group.by, features = (features) )
+  features = features[features %in% rownames(SerObj)]
+  MyDot = DotPlot(SerObj, group.by = group.by, features = (features) )
   
   PctExprDF = lapply(levels(MyDot$data$id), function(xL){
     subset(MyDot$data, id == xL)$pct.exp
@@ -1391,7 +1239,7 @@ PercentExpressed <- function(so, group.by, features, plot_perHM = F){
 
 #' Make an RNA heatmap
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param markerVec A vector of marker genes.
 #' @param labelColumn Column name to use for labeling rows.
 #' @param rowsplit Column name to split rows by.
@@ -1404,7 +1252,7 @@ PercentExpressed <- function(so, group.by, features, plot_perHM = F){
 #' @param asGG returns GGplot not list if true
 #' @return A heatmap of RNA expression.
 #' @export
-make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit=NULL, columnsplit=NULL,
+make_RNA_heatmap = function(SerObj, markerVec, labelColumn, rowsplit=NULL, columnsplit=NULL,
                             size=6,
                             clus_cols = TRUE, show_column_dend = T,
                             clus_rows=TRUE, show_row_dend = T,
@@ -1414,7 +1262,7 @@ make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit=NULL, co
                             row_names_side = "left",
                             row_dend_side = "left",
                             assays = 'RNA', useCDnames = T){
-  avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+  avgSeurat <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                          features = markerVec,
                                          slot = 'counts', return.seurat = T,
                                          assays = assays)
@@ -1472,7 +1320,7 @@ make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit=NULL, co
 
 #' Plot RNA heatmap v2, no re-normalization of the data
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param labelColumn Column for cell labels.
 #' @param markerVec Marker genes to use.
 #' @param assay Assay type.
@@ -1491,7 +1339,7 @@ make_RNA_heatmap = function(seuratObj, markerVec, labelColumn, rowsplit=NULL, co
 #' @param asGG Output as ggplot object.
 #' @return A heatmap of RNA expression.
 #' @export
-make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2', 
+make_RNA_heatmap2 = function(SerObj, labelColumn = 'ClusterNames_0.2', 
                             markerVec = NULL, assay = "RNA",
                             clus_cols = TRUE, show_column_dend = T,
                             clus_rows=TRUE, show_row_dend = T,
@@ -1506,7 +1354,7 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
                             asGG = T){
   
   
-  mat <- asinh(scale(t(AverageExpression(seuratObj, group.by = labelColumn, features = markerVec)[[assay]])))
+  mat <- asinh(scale(t(AverageExpression(SerObj, group.by = labelColumn, features = markerVec)[[assay]])))
   col_RNA = circlize::colorRamp2(c(min(mat), 0, max(mat)), c(Seurat::BlueAndRed(20)[1], "gray85", Seurat::BlueAndRed(20)[20]), space = "sRGB")
   
   P1 <-
@@ -1550,12 +1398,12 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
 #'
 #' This function produces a combination heatmap from a matrix using Seurat object.
 #'
-#' @param seuratObj A Seurat object containing the single-cell RNA-seq data.
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data.
 #' @param mat A matrix object containing the data for generating the heatmap.
 #' @param markerVec A vector of marker genes to be used for generating the heatmap.
 #' @param pairedList A list of paired conditions for the first set of markers.
 #' @param pairedList2 A list of paired conditions for the second set of markers.
-#' @param labelColumn A column name or index in the metadata of seuratObj to be used as labels for the heatmap.
+#' @param labelColumn A column name or index in the metadata of SerObj to be used as labels for the heatmap.
 #' @param prefix A prefix for the output file name.
 #' @param adtoutput Output type for ADT features. Default is "unpaired".
 #' @param rowsplit A vector of row splits for the heatmap.
@@ -1571,7 +1419,7 @@ make_RNA_heatmap2 = function(seuratObj, labelColumn = 'ClusterNames_0.2',
 #'
 #' @return A combo heatmap plot.
 #' @export
-ProduceComboHeatmapFromMatrix <- function(seuratObj, mat, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 14, gap = 0){
+ProduceComboHeatmapFromMatrix <- function(SerObj, mat, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 14, gap = 0){
   
   library(circlize)
   
@@ -1609,18 +1457,18 @@ ProduceComboHeatmapFromMatrix <- function(seuratObj, mat, markerVec, pairedList,
   
   
   
-  # P2 <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn)
+  # P2 <- CreatePairedHeatmap(SerObj, pairedList, labelColumn)
   if (adtoutput == "unpaired"){
-    res <- CreateProteinHeatmap(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+    res <- CreateProteinHeatmap(SerObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
     P2 <- res[[1]]
     col_ADT <- res[[2]]
   } else {
-    res <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    res <- CreatePairedHeatmap(SerObj, pairedList, labelColumn=labelColumn, prefix = prefix)
     
   }
   
   
-  res2 <- plotEnrichment(seuratObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+  res2 <- plotEnrichment(SerObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
   P3 <- res2[[1]]
   col_tiss <- res2[[2]]
   plotlist <- P1 + P2 + P3
@@ -1642,7 +1490,7 @@ ProduceComboHeatmapFromMatrix <- function(seuratObj, mat, markerVec, pairedList,
 
 #' Produce a combination heatmap
 #' 
-#' @param seuratObj A seurat object
+#' @param SerObj A seurat object
 #' @param markerVec A vector of markers
 #' @param pairedList A list of paired data
 #' @param pairedList2 A second list of paired data
@@ -1661,8 +1509,8 @@ ProduceComboHeatmapFromMatrix <- function(seuratObj, mat, markerVec, pairedList,
 #' @param gap Gap between panels (default: 0)
 #' @return A list of differentially expressed genes
 #' @export
-ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 20, gap = 0){
-  avgSeurat <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+ProduceComboHeatmap <- function(SerObj, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 20, gap = 0){
+  avgSeurat <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                          features = markerVec,
                                          slot = 'data', return.seurat = T,
                                          assays = 'RNA')
@@ -1698,18 +1546,18 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, l
                             column_title = "RNA Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
     )
   
-  # P2 <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn)
+  # P2 <- CreatePairedHeatmap(SerObj, pairedList, labelColumn)
   if (adtoutput == "unpaired"){
-    res <- CreateProteinHeatmap(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+    res <- CreateProteinHeatmap(SerObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
     P2 <- res[[1]]
     col_ADT <- res[[2]]
   } else {
-    res <- CreatePairedHeatmap(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    res <- CreatePairedHeatmap(SerObj, pairedList, labelColumn=labelColumn, prefix = prefix)
     
   }
   
   
-  res2 <- plotEnrichment(seuratObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
+  res2 <- plotEnrichment(SerObj, field1 = labelColumn, field2 = 'Tissue', size, fontsize = fontsize, titlefontsize = titlefontsize, fullorder = fullorder)
   P3 <- res2[[1]]
   col_tiss <- res2[[2]]
   plotlist <- P1 + P2 + P3
@@ -1729,7 +1577,7 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, l
 
 #' Create a protein heatmap
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param proteinList A list of proteins to plot.
 #' @param labelColumn Column name to use for labeling rows.
 #' @param prefix Prefix for plot title.
@@ -1739,10 +1587,10 @@ ProduceComboHeatmap <- function(seuratObj, markerVec, pairedList, pairedList2, l
 #' @param fullorder 
 #' @return A heatmap of protein expression.
 #' @export
-CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, size, fontsize, titlefontsize, fullorder) {
+CreateProteinHeatmap <- function(SerObj, proteinList, labelColumn, prefix, size, fontsize, titlefontsize, fullorder) {
   print(proteinList)
   adt_columns <- proteinList # unname(unlist(pairedList))
-  mat_ADT <- cbind("Label" = seuratObj@meta.data[[labelColumn]], seuratObj@meta.data[,adt_columns])
+  mat_ADT <- cbind("Label" = SerObj@meta.data[[labelColumn]], SerObj@meta.data[,adt_columns])
   colnames(mat_ADT) <- gsub(paste0(prefix, "."), "", colnames(mat_ADT))
   colnames(mat_ADT) <- gsub("_UCell_pos", "", colnames(mat_ADT)) %>% as.factor()
   colnames(mat_ADT) <- gsub("\\.", "-", colnames(mat_ADT)) %>% as.factor()
@@ -1761,7 +1609,7 @@ CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, si
   mat_ADT <- mat_ADT[fullorder,]
   
   rowordering <- rownames(mat_ADT)
-  avgSeuratADT <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+  avgSeuratADT <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                             slot = 'data', return.seurat = T,
                                             assays = prefix)
   # avgSeuratADT <- Seurat::NormalizeData(avgSeuratADT)
@@ -1795,7 +1643,7 @@ CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, si
 
 #' Plot Enrichment 
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param field1 Field 1 to compare.
 #' @param field2 Field 2 to compare.
 #' @param size Size of plot.
@@ -1804,8 +1652,8 @@ CreateProteinHeatmap <- function(seuratObj, proteinList, labelColumn, prefix, si
 #' @param fullorder 
 #' @return A plot of enrichment analysis between two fields.
 #' @export
-plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefontsize, fullorder) {
-  mat <- asinh(chisq.test(table(seuratObj[[field1]][[field1]], seuratObj[[field2]][[field2]]))$res) %>% as.matrix()  
+plotEnrichment <- function(SerObj, field1, field2, size, fontsize, titlefontsize, fullorder) {
+  mat <- asinh(chisq.test(table(SerObj[[field1]][[field1]], SerObj[[field2]][[field2]]))$res) %>% as.matrix()  
   mat <- mat[fullorder,]
   
   rowLabels <- apply(mat, 1, function(x){
@@ -1846,7 +1694,7 @@ plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefonts
 
 #' Produce a combination heatmap old ver
 #' 
-#' @param seuratObj A seurat object
+#' @param SerObj A seurat object
 #' @param markerVec A vector of markers
 #' @param pairedList A list of paired data
 #' @param pairedList2 A second list of paired data
@@ -1865,7 +1713,7 @@ plotEnrichment <- function(seuratObj, field1, field2, size, fontsize, titlefonts
 #' @param gap Gap between panels (default: 0)
 #' @return A list of differentially expressed genes
 #' @export
-ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList2=NULL, 
+ProduceComboHeatmap.old <- function(SerObj, markerVec, pairedList, pairedList2=NULL, 
                                 labelColumn, prefix, adtoutput = "unpaired", 
                                 rowsplit = NULL, columnsplit = NULL, 
                                 size, coldend = TRUE, rowdend = TRUE, 
@@ -1877,7 +1725,7 @@ ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList
 
   
   
-  P1 = scCustFx::make_RNA_heatmap(seuratObj = seuratObj, markerVec = markerVec, labelColumn = labelColumn, 
+  P1 = scCustFx::make_RNA_heatmap(SerObj = SerObj, markerVec = markerVec, labelColumn = labelColumn, 
                                   rowsplit = rowsplit, columnsplit=columnsplit, size=size,
                                   clus_cols = rowdend, show_column_dend = show_column_dend,
                                   clus_rows=coldend, show_row_dend = show_row_dend,
@@ -1891,16 +1739,16 @@ ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList
   P1 = P1$plot
   
   if (adtoutput == "unpaired"){
-    P2 <- scCustFx::CreateProteinHeatmap.old(seuratObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize)
+    P2 <- scCustFx::CreateProteinHeatmap.old(SerObj, proteinList = unname(unlist(pairedList)), labelColumn=labelColumn, prefix = prefix, size, fontsize = fontsize, titlefontsize = titlefontsize)
     col_ADT <- P2[[2]]
     P2 <- P2[[1]]
   } else {
-    P2 <- scCustFx::CreatePairedHeatmap.old(seuratObj, pairedList, labelColumn=labelColumn, prefix = prefix)
+    P2 <- scCustFx::CreatePairedHeatmap.old(SerObj, pairedList, labelColumn=labelColumn, prefix = prefix)
     
   }
   
   
-  P3 <- scCustFx::plotEnrichment.old(seuratObj, field1 = labelColumn, field2 = 'Tissue', 
+  P3 <- scCustFx::plotEnrichment.old(SerObj, field1 = labelColumn, field2 = 'Tissue', 
                                  size, fontsize = fontsize, titlefontsize = titlefontsize,
                                  column_title = "Tissue\nEnrichment")
   col_tiss <- P3[[2]]
@@ -1920,7 +1768,7 @@ ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList
 
 #' Create a protein heatmap old ver
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param proteinList A list of proteins to plot.
 #' @param labelColumn Column name to use for labeling rows.
 #' @param prefix Prefix for plot title.
@@ -1929,11 +1777,11 @@ ProduceComboHeatmap.old <- function(seuratObj, markerVec, pairedList, pairedList
 #' @param titlefontsize Font size for plot title.
 #' @return A heatmap of protein expression.
 #' @export
-CreateProteinHeatmap.old <- function(seuratObj, proteinList, labelColumn, 
+CreateProteinHeatmap.old <- function(SerObj, proteinList, labelColumn, 
                                  prefix, size, fontsize, titlefontsize) {
   print(proteinList)
   adt_columns <- proteinList # unname(unlist(pairedList))
-  mat_ADT <- cbind("Label" = seuratObj@meta.data[[labelColumn]], seuratObj@meta.data[,adt_columns])
+  mat_ADT <- cbind("Label" = SerObj@meta.data[[labelColumn]], SerObj@meta.data[,adt_columns])
   colnames(mat_ADT) <- gsub(paste0(prefix, "."), "", colnames(mat_ADT))
   colnames(mat_ADT) <- gsub("_UCell_pos", "", colnames(mat_ADT)) %>% as.factor()
   colnames(mat_ADT) <- gsub("\\.", "-", colnames(mat_ADT)) %>% as.factor()
@@ -1944,7 +1792,7 @@ CreateProteinHeatmap.old <- function(seuratObj, proteinList, labelColumn,
   mat_ADT <- mat_ADT %>% select(-Label)
   ordering <- names(mat_ADT)
   
-  avgSeuratADT <- Seurat::AverageExpression(seuratObj, group.by = labelColumn,
+  avgSeuratADT <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                             slot = 'data', return.seurat = T,
                                             assays = prefix)
   avgSeuratADT <- Seurat::NormalizeData(avgSeuratADT)
@@ -1972,7 +1820,7 @@ CreateProteinHeatmap.old <- function(seuratObj, proteinList, labelColumn,
 
 #' Plot Enrichment 
 #' 
-#' @param seuratObj A Seurat object.
+#' @param SerObj A Seurat object.
 #' @param field1 Field 1 to compare.
 #' @param field2 Field 2 to compare.
 #' @param size Size of plot.
@@ -1981,8 +1829,8 @@ CreateProteinHeatmap.old <- function(seuratObj, proteinList, labelColumn,
 #' @param column_title Column title for plot.
 #' @return A plot of enrichment analysis between two fields.
 #' @export
-plotEnrichment.old <- function(seuratObj, field1, field2, size, fontsize, titlefontsize, column_title) {
-  mat <- asinh(chisq.test(table(seuratObj[[field1]][[field1]], seuratObj[[field2]][[field2]]))$res) %>% as.matrix()  
+plotEnrichment.old <- function(SerObj, field1, field2, size, fontsize, titlefontsize, column_title) {
+  mat <- asinh(chisq.test(table(SerObj[[field1]][[field1]], SerObj[[field2]][[field2]]))$res) %>% as.matrix()  
   
   rowLabels <- apply(mat, 1, function(x){
     # ToDo:
@@ -2026,7 +1874,7 @@ plotEnrichment.old <- function(seuratObj, field1, field2, size, fontsize, titlef
 #'
 #' This function subsets a Seurat object by the coordinates of a dimensionality reduction, such as tSNE, UMAP, or PCA, and finds differentially expressed genes in the subsetted object.
 #' 
-#' @param so A Seurat object to subset
+#' @param SerObj A Seurat object to subset
 #' @param reduction_method Character input for the dimensionality reduction method to subset by. Accepts "tSNE", "UMAP", or "PCA". Default is "tSNE"
 #' @param x_range A numeric vector of length 2 for the x-coordinate range to subset by
 #' @param y_range A numeric vector of length 2 for the y-coordinate range to subset by
@@ -2040,12 +1888,12 @@ plotEnrichment.old <- function(seuratObj, field1, field2, size, fontsize, titlef
 #' @return A list of differentially expressed genes
 #' @export
 #' @examples
-#' DEgenes_unsupclusts <- SubsetSerAndFindDEGenes(so = pbmc, reduction_method = "tSNE", x_range = c(-10, 10), y_range = c(-20, 20), savePathName = "DEgenes_unsupclusts.rds")
-FindAllMarkers_SubsetCoord <- function(so, reduction_method = "tSNE", x_range = c(-1, 1), y_range = c(-1, 1),
+#' DEgenes_unsupclusts <- SubsetSerAndFindDEGenes(SerObj = pbmc, reduction_method = "tSNE", x_range = c(-10, 10), y_range = c(-20, 20), savePathName = "DEgenes_unsupclusts.rds")
+FindAllMarkers_SubsetCoord <- function(SerObj, reduction_method = "tSNE", x_range = c(-1, 1), y_range = c(-1, 1),
                                        logfc.threshold = 0.25, test.use = "wilcox", slot = "data",
                                        min.pct = 0.65, min.diff.pct = 0.2, only.pos = T,
                                        savePathName = NULL){
-  so_sub = SubsetSerByCoordinates(so=so, reduction_method = reduction_method, x_range = x_range, y_range = y_range)
+  SerObj_sub = SubsetSerByCoordinates(SerObj=SerObj, reduction_method = reduction_method, x_range = x_range, y_range = y_range)
   
   DEgenes_unsupclusts = FindAllMarkers(SerObj,
                             logfc.threshold = logfc.threshold,
@@ -2064,13 +1912,13 @@ FindAllMarkers_SubsetCoord <- function(so, reduction_method = "tSNE", x_range = 
 #' @title SubsetSerByCoordinates
 #'
 #' @description Remove unwanted HTOS from Seurat objects
-#' @param so A Seurat Object 
+#' @param SerObj A Seurat Object 
 #' @param reduction_method an input of  = c("tSNE", "UMAP", "PCA") default tSNE
 #' @param x_range an input of  two numbers defining the x range default c(-1, 1)
 #' @param y_range aan input of  two numbers defining the y range default c(-1, 1)
 #' @return A subset Seurat object.
 #' @export
-SubsetSerByCoordinates <- function(so, reduction_method = "tSNE", assay = "RNA",
+SubsetSerByCoordinates <- function(SerObj, reduction_method = "tSNE", assay = "RNA",
                                    x_range = c(-1, 1), y_range = c(-1, 1)){
 
   #TODO: deal with assay
@@ -2086,13 +1934,13 @@ SubsetSerByCoordinates <- function(so, reduction_method = "tSNE", assay = "RNA",
     dim_2 <- "PC_2"
   }
   
-  cells = (so@reductions[[reduction_method]]@cell.embeddings[,dim_1] > x_range[1] & 
-             so@reductions[[reduction_method]]@cell.embeddings[,dim_1] < x_range[2]) & 
-    (so@reductions[[reduction_method]]@cell.embeddings[,dim_2] > y_range[1] & 
-       so@reductions[[reduction_method]]@cell.embeddings[,dim_2] < y_range[2])
+  cells = (SerObj@reductions[[reduction_method]]@cell.embeddings[,dim_1] > x_range[1] & 
+             SerObj@reductions[[reduction_method]]@cell.embeddings[,dim_1] < x_range[2]) & 
+    (SerObj@reductions[[reduction_method]]@cell.embeddings[,dim_2] > y_range[1] & 
+       SerObj@reductions[[reduction_method]]@cell.embeddings[,dim_2] < y_range[2])
   
   print(paste0("Selection included: ", length(cells), " cells"))
-  subsetted_obj <- so[, cells]
+  subsetted_obj <- SerObj[, cells]
   
   return(subsetted_obj)
 }
@@ -2102,37 +1950,37 @@ SubsetSerByCoordinates <- function(so, reduction_method = "tSNE", assay = "RNA",
 #' @title ReduceSerObj_HTO
 #'
 #' @description Remove unwanted HTOS from Seurat objects
-#' @param so A Seurat Object 
+#' @param SerObj A Seurat Object 
 #' @param removeHTOs Vector of names of HTOs to remove, if NULL, removeHTOs = c("Discordant", "Doublet", "ND")
 #' @return A subset Seurat object.
 #' @export
-ReduceSerObj_HTO <- function(so, removeHTOs = NULL){
+ReduceSerObj_HTO <- function(SerObj, removeHTOs = NULL){
   if(is.null(removeHTOs)){
     print("removeHTOs is null, therefore, deep cleaning")
     removeHTOs = c("Discordant", "Doublet", "ND")
   }
-  if (sum(removeHTOs %in% names(table(so$HTO)))==0){
+  if (sum(removeHTOs %in% names(table(SerObj$HTO)))==0){
     stop("removeHTOs defined not in seurat object ")
   } else {
-    keepHTOs <- setdiff(names(table(so$HTO)), removeHTOs)
+    keepHTOs <- setdiff(names(table(SerObj$HTO)), removeHTOs)
   }
   
   print("Keept HTOs: ")
   print(keepHTOs)
-  return(subset(so, HTO %in% keepHTOs))
+  return(subset(SerObj, HTO %in% keepHTOs))
 }
 
 #' @title DownSample_SerObj_perLevel
 #'
 #' @description downsample per feature levels
-#' @param so A Seurat Object 
+#' @param SerObj A Seurat Object 
 #' @param featureSplit a feature of seurat object to split. "BarcodePrefix" # this is a good way to sample per seq run if possible
 #' @param totalCell  0 # is the default way to downsample by min common cells
 #' @return A subseted downsampled Seurat object.
 #' @export
-DownSample_SerObj_perLevel <- function(so, featureSplit=NULL, totalCell = 300){
+DownSample_SerObj_perLevel <- function(SerObj, featureSplit=NULL, totalCell = 300){
 
-  availFeats = colnames(so@meta.data)
+  availFeats = colnames(SerObj@meta.data)
   
   if(!is.null(featureSplit)){
     
@@ -2148,7 +1996,7 @@ DownSample_SerObj_perLevel <- function(so, featureSplit=NULL, totalCell = 300){
   
   if(totalCell == 300) warning("totalCell = 300 is the default")
   
-  CellCountMat = table(so@meta.data[,featureSplit]) %>% unlist() %>% as.matrix()
+  CellCountMat = table(SerObj@meta.data[,featureSplit]) %>% unlist() %>% as.matrix()
   
   if(totalCell == 0) {
     totalCell = min(CellCountMat[,1])
@@ -2157,14 +2005,14 @@ DownSample_SerObj_perLevel <- function(so, featureSplit=NULL, totalCell = 300){
   
   if(!("barcode" %in% availFeats)) {
     warning("barcode not found in meta.data")
-    so$barcode = paste("cell_", 1:nrow(so@meta.data))
+    SerObj$barcode = paste("cell_", 1:nrow(SerObj@meta.data))
   }
   
   
-  splitLevs = levels(factor(so@meta.data[,featureSplit]))
+  splitLevs = levels(factor(SerObj@meta.data[,featureSplit]))
   
   barcodeLS = lapply(splitLevs, function(xSL){
-    availBarcodes = so@meta.data[which(so@meta.data[,featureSplit] == xSL),]$barcode
+    availBarcodes = SerObj@meta.data[which(SerObj@meta.data[,featureSplit] == xSL),]$barcode
     if(length(availBarcodes)<totalCell) {
       warning(paste0(xSL, " had less cells than totalCell"))
       availBarcodes
@@ -2175,7 +2023,7 @@ DownSample_SerObj_perLevel <- function(so, featureSplit=NULL, totalCell = 300){
     
   })
   
-  return(subset(so, barcode %in% unlist(barcodeLS)))
+  return(subset(SerObj, barcode %in% unlist(barcodeLS)))
   
 }
 
@@ -2184,35 +2032,35 @@ DownSample_SerObj_perLevel <- function(so, featureSplit=NULL, totalCell = 300){
 #' @title compressSerHD5
 #'
 #' @description compressSerHD5 will save space on your drives.
-#' @param so A Seurat Object 
+#' @param SerObj A Seurat Object 
 #' @param load.path the path to a seurat .rds file
 #' @param save.path the path to the desired hd5 seurat file. Default is NULL which then load.path is used to save the new object next to it.
 #' @param overwrite  default F overwirtes the new hd5 if exists
-#' @param updateSerObj  default F if T runs UpdateSeuratObject()
+#' @param updateSerObj  default F if T runs UpdateSerObj()
 #' @param returnSerObj  default F if T returns the Seurat object to be used in a pipeline
 #' @return Saves HD5 Seurat object to path given
 #' @export
-compressSerHD5 <- function(so = NULL, load.path = NULL, overwrite = F,
+compressSerHD5 <- function(SerObj = NULL, load.path = NULL, overwrite = F,
                            save.path = NULL, updateSerObj = F, returnSerObj = F){
-  if(is.null(so) & is.null(load.path)) stop("give seurat object so or load.path to one")
+  if(is.null(SerObj) & is.null(load.path)) stop("give seurat object SerObj or load.path to one")
   
-  if((!is.null(so)) & (!is.null(load.path))) warning("both so and load.path given, load.path is ignored")
+  if((!is.null(SerObj)) & (!is.null(load.path))) warning("both SerObj and load.path given, load.path is ignored")
   
   
-  if(is.null(so)){
+  if(is.null(SerObj)){
     print("loading in RDS")
-    so = readRDS(load.path)
+    SerObj = readRDS(load.path)
     print("load of RDS from drives complete")
   }
   
-  if(updateSerObj) so = SeuratDisk::UpdateSeuratObject(so)
+  if(updateSerObj) SerObj = SeuratDisk::UpdateSerObj(SerObj)
   
   if(is.null(save.path)) save.path = gsub(".rds", "hd5Ser", load.path)
   print("saving file path:")
   print(save.path)
-  SeuratDisk::SaveH5Seurat(so, filename=save.path,  overwrite = overwrite)
+  SeuratDisk::SaveH5Seurat(SerObj, filename=save.path,  overwrite = overwrite)
   print("save complete")
-  if(returnSerObj) return(so)
+  if(returnSerObj) return(SerObj)
   
 }
 
@@ -2235,8 +2083,8 @@ scatter_plot_seurat <- function(seurat_obj, meta_feature, gene_name, x_split_val
   
   downSampMin = min(c(length(x_expr), length(y_expr)))
   
-  x_expr = sort(sample(x_expr, downSampMin, replace = F), decreasing = F)
-  y_expr = sort(sample(y_expr, downSampMin, replace = F), decreasing = F)
+  x_expr = SerObjrt(sample(x_expr, downSampMin, replace = F), decreasing = F)
+  y_expr = SerObjrt(sample(y_expr, downSampMin, replace = F), decreasing = F)
   
   
   r_squared <- cor(x=as.numeric(x_expr), 

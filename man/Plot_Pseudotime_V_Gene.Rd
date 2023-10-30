@@ -5,8 +5,8 @@
 \title{Plot a scatter plot with smoothed lines for selected features}
 \usage{
 Plot_Pseudotime_V_Gene(
-  seuratObj,
-  SortByName,
+  SerObj,
+  SerObjrtByName,
   Feats = NULL,
   base_size = 20,
   col_vector = col_vector,
@@ -16,9 +16,9 @@ Plot_Pseudotime_V_Gene(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object to plot.}
+\item{SerObj}{A Seurat object to plot.}
 
-\item{SortByName}{The name of the variable to use for sorting cells on the x-axis.}
+\item{SerObjrtByName}{The name of the variable to use for SerObjrting cells on the x-axis.}
 
 \item{Feats}{A vector of feature names to plot on the y-axis. Default is NULL, which will plot all features in the object.}
 
@@ -36,9 +36,9 @@ Plot_Pseudotime_V_Gene(
 A ggplot object.
 }
 \description{
-This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SortByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
+This function creates a scatter plot of a Seurat object, with smoothed lines for each selected feature. The x-axis is defined by the selected SerObjrtByName parameter, and the y-axis is defined by the values of the selected features added to the data frame. The function uses ggplot2 for visualization.
 }
 \examples{
-Plot_Pseudotime_V_Gene(seuratObj, "nCount_RNA", c("TNFRSF4", "CD69"))
+Plot_Pseudotime_V_Gene(SerObj, "nCount_RNA", c("TNFRSF4", "CD69"))
 
 }

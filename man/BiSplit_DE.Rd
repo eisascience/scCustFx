@@ -5,7 +5,7 @@
 \title{BiSplit_DE}
 \usage{
 BiSplit_DE(
-  SerObject,
+  SerObj,
   gate_feat = NULL,
   gate_thr = 0,
   plot_DimPlot = F,
@@ -21,7 +21,7 @@ BiSplit_DE(
 )
 }
 \arguments{
-\item{SerObject}{An object of class Seurat}
+\item{SerObj}{An object of class Seurat}
 
 \item{gate_feat}{A character vector of feature names to use as gatekeepers for the BiSplit algorithm.}
 

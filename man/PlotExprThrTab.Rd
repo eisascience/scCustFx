@@ -5,7 +5,7 @@
 \title{PlotExprThrTab}
 \usage{
 PlotExprThrTab(
-  SeuratObj,
+  SerObj,
   GeneName = NULL,
   CutThresh = NULL,
   PlotBar = T,
@@ -16,7 +16,7 @@ PlotExprThrTab(
 )
 }
 \arguments{
-\item{SeuratObj, }{A Seurat object.}
+\item{SerObj, }{A Seurat object.}
 
 \item{GeneName, }{the Gene name of interest.}
 

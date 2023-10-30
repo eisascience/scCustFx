@@ -5,7 +5,7 @@
 \title{Perform dual-feature gating on a Seurat object}
 \usage{
 SingleFeatGate(
-  SerObject,
+  SerObj,
   feat1 = NULL,
   thr1 = 0,
   dir1 = "pos",
@@ -15,7 +15,7 @@ SingleFeatGate(
 )
 }
 \arguments{
-\item{SerObject}{A Seurat object to perform gating on.}
+\item{SerObj}{A Seurat object to perform gating on.}
 
 \item{feat1}{A character string representing the name of the first feature to gate on. Defaults to NULL.}
 
