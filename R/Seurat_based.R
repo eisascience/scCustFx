@@ -1,3 +1,114 @@
+#' Most_Common_Clones_Per
+#' Function to compute the most common clones for a TCR feature in a Seurat object, grouped by a second feature
+#'
+#' @param SerObj A Seurat object containing the data.
+#' @param tcr_feature A metadata feature e.g. TRA_J
+#' @param grouping_feature A metadata feature to group by e.g. Tissue
+#' @param top_n a numerical value, default 10
+#' 
+#' @export
+Most_Common_Clones_Per <- function(SerObj, tcr_feature, grouping_feature, top_n = 10) {
+  # Extract TCR feature and grouping feature from the Seurat object
+  tcr_data <- SerObj[[tcr_feature]]
+  tcr_data$grouping_data <- as.character(SerObj[[grouping_feature]][,1])
+  
+  # Initialize an empty list to store top clones and their counts for each group
+  top_clones_list <- list()
+  
+  # Get unique levels of the grouping feature
+  grouping_levels <- unique(tcr_data$grouping_data)
+  
+  # Iterate through each level of the grouping feature
+  for (level in grouping_levels) {
+    # Subset data for the current level of the grouping feature
+    subset_data <- tcr_data[tcr_data$grouping_data == level, 1]
+    
+    # Split clones separated by comma and remove NA values
+    clones <- unlist(strsplit(as.character(subset_data), ","))[!is.na(subset_data)]
+    
+    # Count the frequency of each clone
+    clone_counts <- table(clones)
+    
+    # Sort clones by frequency in descending order
+    sorted_clones <- sort(clone_counts, decreasing = TRUE)
+    
+    # Get the top N most common clones for the current level
+    top_clones <- names(sorted_clones)[1:min(length(sorted_clones), top_n)]
+    
+    # Remove any leading or trailing spaces in clone names and remove NA
+    top_clones <- trimws(gsub("\"| NA", "", top_clones))
+    top_clones <- top_clones[top_clones != ""]
+    
+    # Store top clones and their counts in a data frame
+    top_clones_df <- data.frame(Clone = top_clones, Count = sorted_clones[top_clones])
+    
+    # Add top clones and their counts for the current level to the list
+    top_clones_list[[as.character(level)]] <- top_clones_df
+  }
+  
+  return(top_clones_list)
+}
+
+
+#' Most_Common_Clones_2_Matrix
+#' A function that takes in a list, from Most_Common_Clones_Per()
+#'
+#' @param top_clones_list A list of data frames with Clone and Count.Freq
+#' 
+#' @export
+Most_Common_Clones_2_Matrix <- function(top_clones_list) {
+  # Extract clone names and their counts for each group
+  clone_names <- unique(unlist(lapply(top_clones_list, function(df) df$Clone)))
+  grouping_levels <- names(top_clones_list)
+  
+  # Initialize an empty matrix with rows as clones and columns as grouping levels
+  freq_matrix <- matrix(0, nrow = length(clone_names), ncol = length(grouping_levels),
+                        dimnames = list(clone_names, grouping_levels))
+  
+  # Fill the matrix with clone frequencies
+  for (i in 1:length(grouping_levels)) {
+    group <- as.character(grouping_levels[i])
+    clone_df <- top_clones_list[[group]]
+    clone_indices <- match(clone_df$Clone, clone_names)
+    freq_matrix[clone_indices, i] <- clone_df$Count.Freq
+  }
+  
+  return(freq_matrix)
+}
+
+
+#' Most_Common_Clones
+#' Function to compute the most common clones for a TCR feature in a Seurat object
+#'
+#' @param SerObj A Seurat object containing the data.
+#' @param tcr_feature A metadata feature e.g. TRA_J
+#' @param top_n a numerical value, default 10
+#'
+#' @export
+Most_Common_Clones <- function(SerObj, tcr_feature, top_n = 10) {
+  # Extract TCR feature from the Seurat object
+  tcr_data <- SerObj[[tcr_feature]]
+  
+  # Split clones separated by comma and remove NA values
+  clones <- unlist(strsplit(as.character(tcr_data), ","))[!is.na(tcr_data)]
+  
+  # Count the frequency of each clone
+  clone_counts <- table(clones)
+  
+  # Sort clones by frequency in descending order
+  sorted_clones <- sort(clone_counts, decreasing = TRUE)
+  
+  # Get the top N most common clones
+  top_clones <- names(sorted_clones)[1:min(length(sorted_clones), top_n)]
+  
+  # Remove any leading or trailing spaces in clone names and remove NA
+  top_clones <- trimws(gsub("\"| NA", "", top_clones))
+  top_clones = top_clones[top_clones!=""]
+  return(top_clones)
+}
+
+
+#' Find_TCR_MAITS
 #' Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33
 #'
 #' @param SerObj A Seurat object containing the data.
@@ -32,64 +143,6 @@ Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
   return(SerObj)
 }
 
-
-
-#' Create a grouped plot with percentage labels in the legend.
-#'
-#' This function generates a grouped plot for the specified feature in a Seurat object, 
-#' adding percentage labels to the legend to represent the proportion of total points 
-#' in each category.
-#'
-#' @param SerObj A Seurat object containing the data.
-#' @param group_feature The feature based on which the data will be grouped and plotted.
-#' @param color_values A vector of color values for the groups.
-#' @param alpha The alpha (transparency) value for the points. Default is 0.3.
-#' @param raster Logical, indicating whether raster graphics should be used. Default is FALSE.
-#' @param raster.dpi A numeric vector of length 2 indicating the reSerObjlution of the raster 
-#'   graphics. Default is c(2000, 2000).
-#' @param pt.size The size of the points in the plot. Default is 0.5.
-#' @param base_size The base font size for the plot. Default is 10.
-#' @param theme_b The theme to be applied to the plot. Default is theme_bw with base_size parameter.
-#' @return A ggplot object with grouped points and legend labels representing percentages.
-#' @examples
-#' \dontrun{
-#' # Example usage:
-#' # gg <- create_grouped_plot(SerObj, group_feature = "IsAlphaBeta", 
-#' #                           color_values = c("dodgerblue", "maroon"), alpha = 0.3,
-#' #                           raster = FALSE, raster.dpi = c(2000, 2000), pt.size = 0.5,
-#' #                           base_size = 10, theme_b = theme_classic(base_size = 10))
-#' }
-#'
-#' @export
-create_grouped_plot <- function(SerObj, group_feature, color_values = c("dodgerblue", "maroon"), 
-                                alpha = .3, raster=F, raster.dpi = c(2000, 2000), 
-                                pt.size = .5,base_size = 10,
-                                theme_b = theme_classic(base_size = base_size)) {
-  # Extract the specified group_feature column from the Seurat object
-  group_column <- SerObj[[group_feature]]
-  
-  # Calculate percentage of total points for the specified group_feature
-  percentages <- round(table(group_column) / nrow(group_column) * 100 , 2)
-  
-  gg <- DimPlot(SerObj, 
-                group.by = group_feature, 
-                raster = raster, raster.dpi = raster.dpi, 
-                cols = alpha(color_values, alpha),
-                pt.size = pt.size, order = T) +
-    scale_color_manual(values = color_values, 
-                       breaks = names(percentages), 
-                       labels = paste(names(percentages), 
-                                      " (", round(percentages, 1), "%)")) +
-    theme_b +
-    theme(axis.line = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank()) +
-    labs(color = group_feature)
-  
-  return(gg)
-}
 
 
 #' Bool.CellsGT

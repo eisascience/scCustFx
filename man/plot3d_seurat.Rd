@@ -12,7 +12,8 @@ plot3d_seurat(
   color_feature = NULL,
   cols = colorRamp(c("navy", "red")),
   plot_title = "",
-  slot = "data"
+  slot = "data",
+  markerSize = 2
 )
 }
 \arguments{

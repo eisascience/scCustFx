@@ -2,7 +2,8 @@
 % Please edit documentation in R/Seurat_based.R
 \name{Find_TCR_MAITS}
 \alias{Find_TCR_MAITS}
-\title{Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33}
+\title{Find_TCR_MAITS
+Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33}
 \usage{
 Find_TCR_MAITS(SerObj, plot = FALSE)
 }
@@ -10,5 +11,6 @@ Find_TCR_MAITS(SerObj, plot = FALSE)
 \item{SerObj}{A Seurat object containing the data.}
 }
 \description{
+Find_TCR_MAITS
 Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33
 }
