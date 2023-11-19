@@ -1,4 +1,38 @@
 
+#' Plot Explained Variance of Principal Components
+#'
+#' This function generates a bar plot illustrating the explained variance of principal components (PCs) in a Seurat object.
+#'
+#' @param SerObj A Seurat object.
+#' @param pcs Numeric vector specifying which PCs to plot. Default is 1:10.
+#'
+#' @return A ggplot object representing the explained variance of the specified principal components.
+#'
+#' @export
+plot_pca_variance <- function(SerObj, pcs = 1:10) {
+  
+  # Get the explained variance by the PCs
+  variance_explained <- SerObj@reductions$pca@stdev^2 / sum(SerObj@reductions$pca@stdev^2)
+  
+  # Subset data for the specified PCs
+  variance_data <- data.frame(PC = pcs, Variance_Explained = variance_explained[pcs])
+  
+  # Plot the explained variance
+  gg <- ggplot(variance_data, aes(x = factor(PC), y = Variance_Explained, fill = ifelse(PC > 3, "Pink", "Lightgray"))) + 
+    geom_col() + 
+    xlab("Principal Component") + 
+    ylab("Explained Variance (%)") + 
+    theme_classic(base_size = 14)+
+    ggtitle(paste("Explained Variance of PCs", min(pcs), "to", max(pcs))) +
+    scale_x_discrete(labels = paste("PC", pcs)) +
+    scale_y_continuous(labels = scales::percent) +
+    scale_fill_manual(values = c("Pink", "Lightgray")) +
+    geom_hline(yintercept = 0.05, linetype = "dashed") + 
+    theme(legend.position = "none",
+          axis.text.x = ggplot2::element_text(angle = 45, vjust = .8, hjust=.9))
+  
+  return(gg)
+}
 
 
 #' Create a grouped plot with percentage labels in the legend.
@@ -170,7 +204,7 @@ VlnPlot_subset <- function(SerObj, group.by, features, plot=F, topN = 10, xlab =
   
   
   #fix factor
-  SerObj@meta.data[,group.by] = naturalSerObjrt::naturalfactor(as.character(SerObj@meta.data[,group.by]))
+  SerObj@meta.data[,group.by] = naturalsort::naturalfactor(as.character(SerObj@meta.data[,group.by]))
   
   features = unique(features)
   

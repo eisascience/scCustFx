@@ -107,11 +107,39 @@ Most_Common_Clones <- function(SerObj, tcr_feature, top_n = 10) {
   return(top_clones)
 }
 
+#' Find_FOXP3
+#' Identify FOXP3+ cells
+#'
+#' @param SerObj A Seurat object containing the data.
+#' @return A Seurat object with the IsFOXP3 metadata column added
+#'
+#' @export
+Find_FOXP3 <- function(SerObj, plot = FALSE) {
+  
+  ComboSerObj$IsFOXP3 = "FOXP3-"
+  ComboSerObj$IsFOXP3[WhichCells(ComboSerObj, expression = FOXP3 > 0)] = 'FOXP3+'
+  
+
+    if (plot) {
+      print(DimPlot(SerObj, group.by = 'IsFOXP3', raster = TRUE, raster.dpi = c(800, 800), cols = c("gray", "maroon")))
+      print(pheatmap::pheatmap(asinh(chisq.test(table(SerObj$IsFOXP3, SerObj$Population))$res)))
+    }
+    
+    SerObj$IsMAITclassic <- "Not TRAV1-2"
+    SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2"] <- "TRAV1-2"
+    SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2" & SerObj$TRA_J == "TRAJ33"] <- "TRAV1-2 TRAJ33"
+    
+
+  
+  return(SerObj)
+}
+
 
 #' Find_TCR_MAITS
 #' Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33
 #'
 #' @param SerObj A Seurat object containing the data.
+#' @return A Seurat object with the IsMAITclassic and Has_TRAV1_2 metadata columns added
 #'
 #' @export
 Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
@@ -129,11 +157,6 @@ Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
     SerObj$IsMAITclassic <- "Not TRAV1-2"
     SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2"] <- "TRAV1-2"
     SerObj$IsMAITclassic[SerObj$Has_TRAV1_2 == "TRAV1-2" & SerObj$TRA_J == "TRAJ33"] <- "TRAV1-2 TRAJ33"
-    
-    # if (plot) {
-    #   print(DimPlot(SerObj, group.by = 'IsMAITclassic', raster = TRUE, raster.dpi = c(800, 800), pt.size = 3) +
-    #           xlim(-8, -4) + ylim(1, 4))
-    # }
     
     
   } else {
