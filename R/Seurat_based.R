@@ -1,3 +1,48 @@
+#' Plot Gene Expression in Seurat Object
+#'
+#' This function generates a violin plot or pie chart for the expression of a specified gene
+#' in a Seurat object, based on a given threshold.
+#'
+#' @param SerObj A Seurat object containing single-cell RNA-seq data.
+#' @param gene The name of the gene for which expression is to be plotted.
+#' @param threshold The expression threshold for selecting cells (default is 0.5).
+#' @param groupBy The variable by which the data is grouped (default is "RNA_snn_res.0.4").
+#' @param doPie Logical, if TRUE, a pie chart is generated instead of a violin plot (default is FALSE).
+#'
+#'
+#'
+#' @export
+plotGeneExpression <- function(serObj, gene, threshold = 0.5, groupBy = "RNA_snn_res.0.4", doPie = FALSE, col_vector = col_vector) {
+  
+  # Get the expression values for the specified gene
+  geneExpression <- GetAssayData(object = serObj, assay = "RNA", layer = "counts")[gene, ]
+  
+  # Get cell ids based on the threshold and gene expression
+  cellIds <- rownames(geneExpression)[geneExpression > threshold]
+  
+  # Subset the Seurat object
+  subsetObj <- subset(serObj, cells = cellIds)
+  
+  # Create a table and print it
+  cat("Table of", groupBy, "distribution:\n")
+  phenoTable <- table(subsetObj[[groupBy]])
+  print(phenoTable)
+  
+  # Create a pie chart if doPie is TRUE
+  if (doPie) {
+    gg_pie_table(phenoTable)
+  } else {
+    # Create a violin plot
+    VlnPlot(subsetObj, 
+            group.by = groupBy, 
+            features = gene, 
+            cols = col_vector, 
+            raster = FALSE)
+  }
+}
+
+
+
 #' Most_Common_Clones_Per
 #' Function to compute the most common clones for a TCR feature in a Seurat object, grouped by a second feature
 #'
@@ -174,13 +219,13 @@ Find_TCR_MAITS <- function(SerObj, plot = FALSE) {
 #'
 #' @param SerObj A Seurat object.
 #' @param thresh A numeric threshold value.
-#' @param slot The slot name of the Seurat object to retrieve the data from.
+#' @param layer The layer name of the Seurat object to retrieve the data from.
 #' @param assay The assay name to retrieve the data from.
 #' @param gene The name of the gene to subset the data.
 #'
 #' @export
-Bool.CellsGT <- function(SerObj, thresh, slot = "data", assay = "RNA", gene=NULL){
-  tempTab <- GetAssayData(SerObj, slot = slot, assay = assay)[gene, ]
+Bool.CellsGT <- function(SerObj, thresh, layer = "data", assay = "RNA", gene=NULL){
+  tempTab <- GetAssayData(SerObj, layer = layer, assay = assay)[gene, ]
   print(summary(tempTab))
   tempTab>thresh
 }
@@ -529,7 +574,7 @@ FeaturePlot_cust <- function(SerObj, dim1, dim2, pt.size = 1,
                                                  group.by = group.by))
   
   
-  gg1$data$GeneExpr <- FetchData(SerObj, Feat, slot = "data")[rownames(gg1$data), 1]
+  gg1$data$GeneExpr <- FetchData(SerObj, Feat, layer = "data")[rownames(gg1$data), 1]
   
   gg1$data <- gg1$data[order(gg1$data$GeneExpr, decreasing = F), ]
   
@@ -652,7 +697,7 @@ UnsupClust_UMAP_proc <- function(SerObj,
 #' @param cols A character vector of colors to use for plotting the results. Default is c("gray", "red").
 #' @param raster Logical value indicating whether to rasterize the plot. Default is FALSE.
 #' @param assay The assay type to use for the analysis. Default is "RNA".
-#' @param slot The slot to use for the analysis. Default is "data".
+#' @param layer The layer to use for the analysis. Default is "data".
 #' @param only.pos Logical value indicating whether to only consider positive differential expression. Default is FALSE.
 #' @param min.pct The minimum percentage of cells expressing a feature to consider it. Default is 0.65.
 #' @param min.diff.pct The minimum percentage difference in expression between groups to consider a feature differentially expressed. Default is 0.2.
@@ -664,7 +709,7 @@ UnsupClust_UMAP_proc <- function(SerObj,
 BiSplit_DE <- function(SerObj, gate_feat = NULL, gate_thr = 0, 
                        plot_DimPlot = F, doDE = T,
                        cols = c("gray", "red"), raster = F, 
-                                assay = "RNA", slot = "data",
+                                assay = "RNA", layer = "data",
                                 only.pos = F, min.pct = 0.65, min.diff.pct = 0.2,
                                 logfc.threshold = 0.25){
   
@@ -699,7 +744,7 @@ BiSplit_DE <- function(SerObj, gate_feat = NULL, gate_thr = 0,
                                       ident.1 = "R",
                                       ident.2 = "L",
                                       test.use = "wilcox", 
-                                      slot = slot,
+                                      layer = layer,
                                       min.pct = min.pct, min.diff.pct = min.diff.pct,
                                       only.pos = only.pos)
     
@@ -772,10 +817,10 @@ Plot_Pseudotime_V_Gene_combo <- function(SerObj, SerObjrtByName, Feats_pos = NUL
   
   if (!is.null(Feats_pos)) {
     if (length(Feats_pos) == 1) {
-      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])
     } else if (length(Feats_pos) > 1) {
       
-      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])))
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats_pos, rownames(tempDF)])))
       
       # colnames(tempDF) <- c(baseColnames, Feats_pos)
     }
@@ -783,10 +828,10 @@ Plot_Pseudotime_V_Gene_combo <- function(SerObj, SerObjrtByName, Feats_pos = NUL
   
   if (!is.null(Feats_neg)) {
     if (length(Feats_neg) == 1) {
-      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])
+      tempDF <- cbind(tempDF, Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])
     } else if (length(Feats_neg) > 1) {
       
-      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])))
+      tempDF <- cbind(tempDF, Matrix::as.matrix(Matrix::t(Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats_neg, rownames(tempDF)])))
       # colnames(tempDF) <- c(baseColnames, Feats_neg)
     }
   }
@@ -952,11 +997,11 @@ Plot_Pseudotime_V_Gene <- function(SerObj, SerObjrtByName, Feats=NULL, base_size
   
   if(length(Feats) == 1){
     
-    tempDF = cbind(tempDF, Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)])
+    tempDF = cbind(tempDF, Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats, rownames(tempDF)])
     
   } else if(length(Feats) > 1){
     
-    tempDF = cbind(tempDF, Matrix::as.matrix( Matrix::t(Seurat::GetAssayData(SerObj, slot = "data", assay = "RNA")[Feats, rownames(tempDF)]) ) )
+    tempDF = cbind(tempDF, Matrix::as.matrix( Matrix::t(Seurat::GetAssayData(SerObj, layer = "data", assay = "RNA")[Feats, rownames(tempDF)]) ) )
     
     colnames(tempDF) = c(baseColnames, Feats)
     
@@ -1149,7 +1194,7 @@ BetterViolins = function(SerObj=NULL,
 #' @param SerObj A Seurat object containing the data.
 #' @param feature The feature to plot.
 #' @param group.by The grouping variable to use for the plot (default: "ident").
-#' @param slot The slot to use for the plot (default: "data").
+#' @param layer The layer to use for the plot (default: "data").
 #' @param GrpFacLevels Optional vector of grouping factor levels to plot.
 #' @param assay The assay to use for the plot (default: "RNA").
 #' @param colors A vector of colors to use for the plot.
@@ -1162,7 +1207,7 @@ BetterViolins = function(SerObj=NULL,
 plot_violin_wpvalue <- function(SerObj, 
                                 feature, 
                                 group.by = "ident",
-                                slot="data", 
+                                layer="data", 
                                 GrpFacLevels=NULL,
                                 assay="RNA", 
                                 colors =col_vector, compariSerObjns = NULL, title="",
@@ -1173,7 +1218,7 @@ plot_violin_wpvalue <- function(SerObj,
   
   library(ggpubr)
   
-  v1 <- VlnPlot(SerObj, features =feature, slot =slot, assay = assay, group.by=group.by)
+  v1 <- VlnPlot(SerObj, features =feature, layer =layer, assay = assay, group.by=group.by)
   
   v1 <- v1$data
   colnames(v1) = c("Feat", "Grp")
@@ -1340,10 +1385,10 @@ make_RNA_heatmap = function(SerObj, markerVec, labelColumn, rowsplit=NULL, colum
                             assays = 'RNA', useCDnames = T){
   avgSeurat <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                          features = markerVec,
-                                         slot = 'counts', return.seurat = T,
+                                         layer = 'counts', return.seurat = T,
                                          assays = assays)
   avgSeurat <- Seurat::NormalizeData(avgSeurat)
-  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
+  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, layer = 'data')))
   mat <- mat %>% pheatmap:::scale_mat(scale = 'column')
   
   if(useCDnames) colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
@@ -1588,10 +1633,10 @@ ProduceComboHeatmapFromMatrix <- function(SerObj, mat, markerVec, pairedList, pa
 ProduceComboHeatmap <- function(SerObj, markerVec, pairedList, pairedList2, labelColumn, prefix, adtoutput = "unpaired", rowsplit = NULL, columnsplit = NULL, size, coldend = TRUE, rowdend = TRUE, coldendside = "bottom", rowdendside = "left", fontsize = 12, titlefontsize = 20, gap = 0){
   avgSeurat <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                          features = markerVec,
-                                         slot = 'data', return.seurat = T,
+                                         layer = 'data', return.seurat = T,
                                          assays = 'RNA')
   # avgSeurat <- Seurat::NormalizeData(avgSeurat)
-  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
+  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, layer = 'data')))
   mat <- mat %>% pheatmap:::scale_mat(scale = 'column') %>% as.data.frame()
   colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
   for (nam in names(pairedList2)){
@@ -1686,7 +1731,7 @@ CreateProteinHeatmap <- function(SerObj, proteinList, labelColumn, prefix, size,
   
   rowordering <- rownames(mat_ADT)
   avgSeuratADT <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
-                                            slot = 'data', return.seurat = T,
+                                            layer = 'data', return.seurat = T,
                                             assays = prefix)
   # avgSeuratADT <- Seurat::NormalizeData(avgSeuratADT)
   mat <- t(as.matrix(avgSeuratADT@assays[[prefix]]@data)) %>% pheatmap:::scale_mat(scale = 'column') %>% as.data.frame()
@@ -1869,7 +1914,7 @@ CreateProteinHeatmap.old <- function(SerObj, proteinList, labelColumn,
   ordering <- names(mat_ADT)
   
   avgSeuratADT <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
-                                            slot = 'data', return.seurat = T,
+                                            layer = 'data', return.seurat = T,
                                             assays = prefix)
   avgSeuratADT <- Seurat::NormalizeData(avgSeuratADT)
   mat <- t(as.matrix(avgSeuratADT@assays[[prefix]]@data)) %>% pheatmap:::scale_mat(scale = 'column') %>% as.data.frame()
@@ -1956,7 +2001,7 @@ plotEnrichment.old <- function(SerObj, field1, field2, size, fontsize, titlefont
 #' @param y_range A numeric vector of length 2 for the y-coordinate range to subset by
 #' @param logfc.threshold A numeric threshold for the log fold change of genes to be considered differentially expressed. Default is 0.25
 #' @param test.use A character input for the test to use for finding differentially expressed genes. Default is "wilcox"
-#' @param slot Character input for which slot to use for finding differentially expressed genes. Default is "data"
+#' @param layer Character input for which layer to use for finding differentially expressed genes. Default is "data"
 #' @param min.pct A numeric threshold for the minimum percentage of cells expressing a gene to be considered. Default is 0.65
 #' @param min.diff.pct A numeric threshold for the minimum difference in percentage of cells expressing a gene between groups to be considered differentially expressed. Default is 0.2
 #' @param only.pos Logical input indicating whether to only consider positively expressed genes. Default is TRUE
@@ -1966,14 +2011,14 @@ plotEnrichment.old <- function(SerObj, field1, field2, size, fontsize, titlefont
 #' @examples
 #' DEgenes_unsupclusts <- SubsetSerAndFindDEGenes(SerObj = pbmc, reduction_method = "tSNE", x_range = c(-10, 10), y_range = c(-20, 20), savePathName = "DEgenes_unsupclusts.rds")
 FindAllMarkers_SubsetCoord <- function(SerObj, reduction_method = "tSNE", x_range = c(-1, 1), y_range = c(-1, 1),
-                                       logfc.threshold = 0.25, test.use = "wilcox", slot = "data",
+                                       logfc.threshold = 0.25, test.use = "wilcox", layer = "data",
                                        min.pct = 0.65, min.diff.pct = 0.2, only.pos = T,
                                        savePathName = NULL){
   SerObj_sub = SubsetSerByCoordinates(SerObj=SerObj, reduction_method = reduction_method, x_range = x_range, y_range = y_range)
   
   DEgenes_unsupclusts = FindAllMarkers(SerObj,
                             logfc.threshold = logfc.threshold,
-                            test.use = test.use, slot = slot,
+                            test.use = test.use, layer = layer,
                             min.pct = min.pct, min.diff.pct = min.diff.pct,
                             only.pos = only.pos)
 
@@ -2147,15 +2192,15 @@ compressSerHD5 <- function(SerObj = NULL, load.path = NULL, overwrite = F,
 #' @return ggplot
 #' @export
 scatter_plot_seurat <- function(seurat_obj, meta_feature, gene_name, x_split_value, y_split_value, 
-                                assay = "RNA", slot="counts", base_size = 11) {
+                                assay = "RNA", layer="counts", base_size = 11) {
   require(broom)
   DefaultAssay(seurat_obj) = assay
   
   x_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == x_split_value)
   y_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == y_split_value)
   
-  x_expr <- GetAssayData(seurat_obj, slot = slot)[gene_name, x_cell_ids]
-  y_expr <- GetAssayData(seurat_obj, slot = slot)[gene_name, y_cell_ids]
+  x_expr <- GetAssayData(seurat_obj, layer = layer)[gene_name, x_cell_ids]
+  y_expr <- GetAssayData(seurat_obj, layer = layer)[gene_name, y_cell_ids]
   
   downSampMin = min(c(length(x_expr), length(y_expr)))
   
