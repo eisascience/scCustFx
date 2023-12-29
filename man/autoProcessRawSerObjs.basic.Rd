@@ -5,7 +5,7 @@
 \title{autoProcessRawSerObjs.basic: An automated and basic pipeline to process raw Seurat objects CellMembrane package.}
 \usage{
 autoProcessRawSerObjs.basic(
-  seuratObjects,
+  SerObjLS,
   verbose = T,
   doDoubletFinder = T,
   dropDoublets = F,
@@ -37,7 +37,7 @@ autoProcessRawSerObjs.basic(
 )
 }
 \arguments{
-\item{seuratObjects, }{A named list of Seurat object.}
+\item{SerObjLS, }{A named list of Seurat object.}
 
 \item{verbose, }{set T/F for print to screen msgs}
 

@@ -13,7 +13,7 @@ BiSplit_DE(
   cols = c("gray", "red"),
   raster = F,
   assay = "RNA",
-  slot = "data",
+  layer = "data",
   only.pos = F,
   min.pct = 0.65,
   min.diff.pct = 0.2,
@@ -37,7 +37,7 @@ BiSplit_DE(
 
 \item{assay}{The assay type to use for the analysis. Default is "RNA".}
 
-\item{slot}{The slot to use for the analysis. Default is "data".}
+\item{layer}{The layer to use for the analysis. Default is "data".}
 
 \item{only.pos}{Logical value indicating whether to only consider positive differential expression. Default is FALSE.}
 

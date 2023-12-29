@@ -10,6 +10,9 @@ Find_TCR_MAITS(SerObj, plot = FALSE)
 \arguments{
 \item{SerObj}{A Seurat object containing the data.}
 }
+\value{
+A Seurat object with the IsMAITclassic and Has_TRAV1_2 metadata columns added
+}
 \description{
 Find_TCR_MAITS
 Identify TRAV1-2 cells and Classical MAITS as TRAV1-2 TRAJ33

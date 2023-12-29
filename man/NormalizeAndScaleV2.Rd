@@ -5,7 +5,7 @@
 \title{NormalizeAndScaleV2 a customized version from CellMembrane}
 \usage{
 NormalizeAndScaleV2(
-  seuratObj,
+  SerObj,
   variableFeatureSelectionMethod = "vst",
   nVariableFeatures = 2000,
   mean.cutoff = c(0.0125, 3),
@@ -17,7 +17,7 @@ NormalizeAndScaleV2(
 )
 }
 \arguments{
-\item{seuratObjects, }{A named list of Seurat object.}
+\item{SerObjLS, }{A named list of Seurat object.}
 }
 \value{
 Normalized and scaled seurat object

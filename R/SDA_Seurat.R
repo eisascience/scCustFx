@@ -87,15 +87,22 @@ CommonLoadingSDAMat = function(sdaRuns){
 SDAScoreMeta2Reduction <- function(SerObj, 
                                    loadingMat = NULL,
                                    sdaComps = NULL, reduction.key = 'SDA_' , 
-                                   assayName = "RNA", reduction.name = "SDA"){
+                                   assayName = "RNA", reduction.name = "SDA", includeLoading = F){
   
   embeddings <- Matrix::as.matrix(SerObj@meta.data[,sdaComps] )
   projected <- Matrix::as.matrix(loadingMat)
   
   colnames(projected) <- paste0(reduction.key, 1:ncol(projected))
   
-  sda.reduction <- Seurat::CreateDimReducObject(embeddings = embeddings, 
-                                                projected = projected, key = reduction.key, assay = assayName)
+  if(includeLoading) {
+    sda.reduction <- Seurat::CreateDimReducObject(embeddings = embeddings, 
+                                                  loadings = as.matrix(loadingMat),
+                                                  projected = projected, key = reduction.key, assay = assayName)
+  } else {
+    sda.reduction <- Seurat::CreateDimReducObject(embeddings = embeddings, 
+                                                  projected = projected, key = reduction.key, assay = assayName)
+  }
+  
   
   SerObj[[reduction.name]] <- sda.reduction
   return(SerObj)

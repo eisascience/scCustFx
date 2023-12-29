@@ -4,14 +4,14 @@
 \alias{Bool.CellsGT}
 \title{Bool.CellsGT}
 \usage{
-Bool.CellsGT(SerObj, thresh, slot = "data", assay = "RNA", gene = NULL)
+Bool.CellsGT(SerObj, thresh, layer = "data", assay = "RNA", gene = NULL)
 }
 \arguments{
 \item{SerObj}{A Seurat object.}
 
 \item{thresh}{A numeric threshold value.}
 
-\item{slot}{The slot name of the Seurat object to retrieve the data from.}
+\item{layer}{The layer name of the Seurat object to retrieve the data from.}
 
 \item{assay}{The assay name to retrieve the data from.}
 

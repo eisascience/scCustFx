@@ -11,7 +11,7 @@ FindAllMarkers_SubsetCoord(
   y_range = c(-1, 1),
   logfc.threshold = 0.25,
   test.use = "wilcox",
-  slot = "data",
+  layer = "data",
   min.pct = 0.65,
   min.diff.pct = 0.2,
   only.pos = T,
@@ -31,7 +31,7 @@ FindAllMarkers_SubsetCoord(
 
 \item{test.use}{A character input for the test to use for finding differentially expressed genes. Default is "wilcox"}
 
-\item{slot}{Character input for which slot to use for finding differentially expressed genes. Default is "data"}
+\item{layer}{Character input for which layer to use for finding differentially expressed genes. Default is "data"}
 
 \item{min.pct}{A numeric threshold for the minimum percentage of cells expressing a gene to be considered. Default is 0.65}
 

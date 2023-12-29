@@ -5,7 +5,7 @@
 \title{autoProcessRawSerObjs.prime: An automated and basic pipeline to process raw Seurat objects obtained form prime-seq with CellMembrane package.}
 \usage{
 autoProcessRawSerObjs.prime(
-  seuratObjects,
+  SerObjLS,
   verbose = T,
   doDoubletFinder = T,
   dropDoublets = F,
@@ -39,7 +39,7 @@ autoProcessRawSerObjs.prime(
 )
 }
 \arguments{
-\item{seuratObjects, }{A named list of Seurat object.}
+\item{SerObjLS, }{A named list of Seurat object.}
 
 \item{verbose, }{set T/F for print to screen msgs}
 

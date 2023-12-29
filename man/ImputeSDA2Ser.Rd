@@ -5,7 +5,7 @@
 \title{This function to add imputed scores from gene loading}
 \usage{
 ImputeSDA2Ser(
-  serObj,
+  SerObj,
   sda_loadings,
   keepComps = NULL,
   sdaObjID = "",
@@ -14,7 +14,7 @@ ImputeSDA2Ser(
 )
 }
 \arguments{
-\item{serObj}{A seurat Object, with assay RNA and slot data}
+\item{SerObj}{A seurat Object, with assay RNA and slot data}
 
 \item{sda_loadings}{matrix of sda loadings}
 

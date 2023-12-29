@@ -8,7 +8,7 @@ plot_violin_wpvalue(
   SerObj,
   feature,
   group.by = "ident",
-  slot = "data",
+  layer = "data",
   GrpFacLevels = NULL,
   assay = "RNA",
   colors = col_vector,
@@ -24,7 +24,7 @@ plot_violin_wpvalue(
 
 \item{group.by}{The grouping variable to use for the plot (default: "ident").}
 
-\item{slot}{The slot to use for the plot (default: "data").}
+\item{layer}{The layer to use for the plot (default: "data").}
 
 \item{GrpFacLevels}{Optional vector of grouping factor levels to plot.}
 

@@ -11,7 +11,7 @@ scatter_plot_seurat(
   x_split_value,
   y_split_value,
   assay = "RNA",
-  slot = "counts",
+  layer = "counts",
   base_size = 11
 )
 }

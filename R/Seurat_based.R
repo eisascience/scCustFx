@@ -161,8 +161,8 @@ Most_Common_Clones <- function(SerObj, tcr_feature, top_n = 10) {
 #' @export
 Find_FOXP3 <- function(SerObj, plot = FALSE) {
   
-  ComboSerObj$IsFOXP3 = "FOXP3-"
-  ComboSerObj$IsFOXP3[WhichCells(ComboSerObj, expression = FOXP3 > 0)] = 'FOXP3+'
+  SerObj$IsFOXP3 = "FOXP3-"
+  SerObj$IsFOXP3[WhichCells(SerObj, expression = FOXP3 > 0)] = 'FOXP3+'
   
 
     if (plot) {
@@ -1218,7 +1218,7 @@ plot_violin_wpvalue <- function(SerObj,
   
   library(ggpubr)
   
-  v1 <- VlnPlot(SerObj, features =feature, layer =layer, assay = assay, group.by=group.by)
+  v1 <- VlnPlot(SerObj, features =feature, assay = assay, group.by=group.by)
   
   v1 <- v1$data
   colnames(v1) = c("Feat", "Grp")

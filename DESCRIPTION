@@ -1,7 +1,7 @@
 Package: scCustFx
 Type: Package
 Title: single-cell custom fxs Package
-Version: 0.0.2
+Version: 0.1.0
 Author: Eisa Mahyari
 Maintainer: The package maintainer <mahyarie@ohsu.edu>
 Description: The goal of this package is bringing together tools and pipelines for the analysis of single-cell and spatial omics data to complement other packages like Seurat and OOSAP.

@@ -1,4 +1,235 @@
 
+#' This function generates a plot of gene loadings along genomic coordinates based on a Seurat object.
+#'
+#' @param SerObj A Seurat object.
+#' @param reduction The dimensionality reduction method used in Seurat (default is "pca").
+#' @param dimN the reduction dim default = 1 
+#' @param highlight_genes A character vector of gene symbols to highlight in the plot (default is NULL).
+#' @param TopNpos The number of top positive loadings to display (default is 10).
+#' @param TopNneg The number of top negative loadings to display (default is 10).
+#' @param data_set passed to SDAtools:::get.location data_set default "hsapiens_gene_ensembl" can be  #mmulatta_gene_ensembl .. see ??useMart or do: mart = useMart('ensembl'), followed by listDatasets(mart).
+#' @param invertWeights to invert the loading weight i.e., -loadings
+#' @param includeUnMapped to include un mapped genes e.g. LOCs default = T
+#' 
+#' 
+#' @return A ggplot object representing the loadings along genomic coordinates.
+#' @export
+plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
+                                      highlight_genes = NULL, 
+                                      TopNpos = 10, TopNneg=10,
+                                      data_set = "hsapiens_gene_ensembl", #mmulatta_gene_ensembl
+                                      dimN = 1, invertWeights=F, includeUnMapped = T, geneLocPath=NULL ) {
+  
+  library(biomaRt)
+  library(ggplot2)
+  library(ggrepel)
+  
+  # Use the Ensembl Mart for human genes
+  mart <- useMart("ensembl", "hsapiens_gene_ensembl")
+  
+  # Get gene coordinates
+  genes <- getBM(attributes = c("chromosome_name", "start_position", "end_position"), mart = mart)
+  
+  # Calculate chromosome lengths
+  chromosomes <- unique(genes$chromosome_name)
+  chromosome_length_red <- sapply(chromosomes, function(chr) {
+    chr_genes <- subset(genes, chromosome_name == chr)
+    max_end <- max(chr_genes$end_position)
+    return(max_end)
+  })
+  
+  chromosome_length_red = chromosome_length_red[names(chromosome_length_red) %in% c(1:22, "X", "Y", "MT")]
+  chromosome_lengthsDF = data.frame(chromosome = names(chromosome_length_red),
+                                    length = as.numeric(chromosome_length_red))
+  
+  Genes2Map = rownames(Seurat::Loadings(SerObj, reduction = reduction))
+  
+
+  
+  if(!is.null(geneLocPath)) {
+    
+    if(file.exists(geneLocPath)){
+      gene_locations = readRDS(geneLocPath)
+      
+    } 
+    if(!file.exists(geneLocPath)){
+      print("file does not exist, downloading new results")
+      
+      gene_locations <- SDAtools:::get.location(
+        gene.symbols = Genes2Map,
+        data_set = data_set,
+        gene_name = "external_gene_name"
+      )
+      
+      saveRDS(gene_locations, geneLocPath)
+    }
+  } else{
+    # if(is.null(geneLocPath)){
+      gene_locations <- SDAtools:::get.location(
+        gene.symbols = Genes2Map,
+        data_set = data_set,
+        gene_name = "external_gene_name"
+      )
+    # } 
+  }
+  
+  
+  gene_locations[is.na(gene_locations$start_position), ]$chromosome_name = "?"
+  gene_locations[is.na(gene_locations$start_position), ]$start_position = 1
+  
+  if(includeUnMapped){
+    if(sum(grepl("^LOC", Genes2Map)) > 0){
+      LOCgenes = Genes2Map[grepl("^LOC", Genes2Map)]
+      
+      geneLocPath_fix = gsub(".rds", "_LOCfix.rds", geneLocPath)
+      
+      # if(!is.null(geneLocPath)) {
+      #   
+      #   if(file.exists(geneLocPath_fix)){
+      #     LOCgenesFix = readRDS(geneLocPath_fix)
+      #     
+      #   } else {
+      #     LOCgenesFix = CellMembrane:::ResolveLocGenes(LOCgenes)
+      #     saveRDS(LOCgenesFix, geneLocPath_fix)
+      #   }
+      #   
+      # }
+      
+      
+      
+      # LOCgenes %in% gene_locations$gene_symbol
+      
+      gene_locations = rbind(gene_locations,
+                             data.frame(gene_symbol = LOCgenes, 
+                                        chromosome_name = rep("?", length(LOCgenes)),
+                                        start_position = rep(1, length(LOCgenes))))
+      
+    }
+  }
+  
+  
+  temp <- merge(gene_locations, chromosome_lengthsDF, by.x = "chromosome_name", by.y = "chromosome", all.x = TRUE) %>% 
+    as.data.frame()
+  temp$genomic_position <- temp$start_position + temp$length / 2
+  
+  # component = Seurat::Loadings(SerObj, reduction = reduction)[, paste0(redLab, "_", dimN)]
+  component = Seurat::Loadings(SerObj, reduction = reduction)[, dimN]
+  
+  if(invertWeights){
+    component = component * -1
+  }
+  
+  # Subset genes with weights
+  label_data <- data.frame(
+    gene_symbol = names(component),
+    loading = component
+  )
+  
+  # Merge with genomic positions
+  label_data <- merge(label_data, temp, by = "gene_symbol", all.x = TRUE)
+  
+ 
+  label_data[is.na(label_data$start_position), ]$chromosome_name = "?"
+  label_data[is.na(label_data$start_position), ]$length = 3
+  if(includeUnMapped) label_data[is.na(label_data$start_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+  label_data[is.na(label_data$start_position), ]$start_position = 1
+  
+  label_data[is.na(label_data$length), ]$length = 3
+  if(includeUnMapped) label_data[is.na(label_data$genomic_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+  
+  
+  label_data$gene_symbol_show = ""
+  label_data$gene_symbol_show[order(label_data$loading, decreasing = TRUE)[1:TopNpos]] = label_data$gene_symbol[order(label_data$loading, decreasing = TRUE)[1:TopNpos]] 
+  label_data$gene_symbol_show[order(label_data$loading, decreasing = FALSE)[1:TopNneg]] = label_data$gene_symbol[order(label_data$loading, decreasing = FALSE)[1:TopNneg]] 
+  
+  
+  
+  
+  P <- ggplot(label_data, aes(genomic_position, loading, size = abs(loading)^2)) + 
+    geom_point(stroke = 0, aes(alpha = (abs(loading))^0.7, color = ifelse(abs(loading)>.05, "cornflowerblue", "grey"))) + 
+    scale_color_manual(values =  c("cornflowerblue", "grey"))+
+    # scale_color_manual(values = rep_len("black", length(unique(label_data$chromosome_name))+1))+
+    # scale_colour_manual(values = c(rep_len(c("black", "cornflowerblue"), length(unique(label_data$chromosome_name))), "grey")) +
+    xlab("Genomic Coordinate") + ylab("Weight")  +
+    geom_label_repel(aes(label = gene_symbol_show), max.overlaps = max(c(TopNneg,TopNpos ))*2+1,
+                     size = 3, box.padding = unit(0.5, "lines"), 
+                     point.padding = unit(0.1, "lines"), force = 10, segment.size = 0.2, segment.color = "blue") +
+    theme_minimal() + theme(legend.position = "none")
+  
+  # Highlight genes if necessary
+  if (!is.null(highlight_genes)) {
+    P <- P + geom_point(data = label_data[label_data$gene_symbol %in% highlight_genes, ], color = "red")
+  }
+  
+  return(P)
+}
+
+
+
+
+
+
+#' Analyze PC Enrichment
+#'
+#' This function performs enrichment analysis for the genes associated with positive
+#' and negative loadings of a given principal component (PC) in a Seurat object.
+#'
+#' @param SerObj A Seurat object containing the data.
+#' @param CompN The principal component number.
+#' @param topN The number of top genes to consider for enrichment analysis.
+#' @param qrhub The gene database used for enrichment analysis.
+#'
+#' @return A list containing two ggplot objects for positive and negative loadings.
+#'
+#' @examples
+#' \dontrun{
+#' result <- analyzeEnrichment(SerObj, CompN = 1, topN = 20, qrhub = "org.Hs.eg.db")
+#' result$ggGO_pos | result$ggGO_neg
+#' }
+analyzeEnrichment <- function(SerObj, CompN = 1, topN = 20, qrhub = "org.Hs.eg.db", invertWeights=F,
+                                labsize=3.5, fontsize=.25, base_size = 20, max.overlaps = 20, MaxNsig=30,
+                                reduction = "pca", redLab = "PC",
+                              topNGenes = 100, bottomNGenes = 100) {
+  
+  library(AnnotationHub)
+  library(clusterProfiler)
+  library(data.table)
+  
+  # hub <- AnnotationHub()
+  
+  # gene_universe <- rownames(Seurat::Loadings(SerObj, reduction = "pca"))
+  gene_universe = rownames(SerObj)
+  PCloadingDF <- RIRA:::ExtractGeneWeights(seuratObj = SerObj, componentNum = CompN,
+                                           topNGenes = topNGenes, bottomNGenes = bottomNGenes,
+                                           reduction = reduction)
+  
+  if(invertWeights){
+    PCloadingDF$weight = PCloadingDF$weight * -1
+  }
+  
+  NegLoadingsDF <- subset(PCloadingDF, weight < 0)
+  PosLoadingsDF <- subset(PCloadingDF, weight > 0)
+  
+  NegLoadingsDF <- NegLoadingsDF[order(abs(NegLoadingsDF$weight), decreasing = TRUE),]
+  PosLoadingsDF <- PosLoadingsDF[order(abs(PosLoadingsDF$weight), decreasing = TRUE),]
+  
+  top_genes_neg <- NegLoadingsDF$feature[1:min(topN, nrow(NegLoadingsDF))]
+  top_genes_pos <- PosLoadingsDF$feature[1:min(topN, nrow(PosLoadingsDF))]
+  
+  # loc_genes <- CellMembrane::ResolveLocGenes(gene_universe[grep("^LOC", gene_universe)])
+  
+  
+  
+  ggGO_pos <- enrichGOFunction(top_genes_pos, title_suffix =  " Pos", gene_universe=gene_universe, title = paste0(redLab, CompN), qrhub = qrhub, 
+                               labsize=labsize, fontsize=fontsize, base_size = base_size, max.overlaps = max.overlaps, MaxNsig=MaxNsig)
+  ggGO_neg <- enrichGOFunction(top_genes_neg, title_suffix =  " Neg", gene_universe=gene_universe, title = paste0(redLab, CompN), qrhub = qrhub, 
+                               labsize=labsize, fontsize=fontsize, base_size = base_size, max.overlaps = max.overlaps, MaxNsig=MaxNsig)
+  
+  return(list(ggGO_pos = ggGO_pos, ggGO_neg = ggGO_neg))
+}
+
+
+
 #' PercExprThrTab
 #'
 #' This function calculates the percentage of cells expressing each gene above a given threshold in each metadata group of a Seurat object.

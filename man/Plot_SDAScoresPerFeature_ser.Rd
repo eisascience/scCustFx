@@ -5,7 +5,7 @@
 \title{Plot a heatmap of tabulation of SDA score vs meta}
 \usage{
 Plot_SDAScoresPerFeature_ser(
-  seuratObj,
+  SerObj,
   componentNames,
   direction = "Both",
   doASINH = F,
@@ -13,7 +13,7 @@ Plot_SDAScoresPerFeature_ser(
 )
 }
 \arguments{
-\item{seuratObj}{A Seurat object containing SDA scores to use for the reduction.}
+\item{SerObj}{A Seurat object containing SDA scores to use for the reduction.}
 
 \item{componentNames}{a vector of meta features, the first is the tabulation meta the rest are sda scores... e.g. componentNames = c("ClusterNames_0.4", sdaComps[1:10])}
 
