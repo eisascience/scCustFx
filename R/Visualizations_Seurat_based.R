@@ -42,8 +42,9 @@ plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
   chromosome_lengthsDF = data.frame(chromosome = names(chromosome_length_red),
                                     length = as.numeric(chromosome_length_red))
   
-  Genes2Map = rownames(Seurat::Loadings(SerObj, reduction = reduction))
-  
+
+    Genes2Map = rownames(SerObj)
+
 
   
   if(!is.null(geneLocPath)) {
