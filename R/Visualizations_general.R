@@ -1,3 +1,37 @@
+#' Create a QQ Plot
+#'
+#' This function generates a quantile-quantile (QQ) plot using ggplot2.
+#'
+#' @param x Not used (for flexibility).
+#' @param y The sample data for which you want to create the QQ plot.
+#' @param x_title The title for the x-axis.
+#' @param y_title The title for the y-axis.
+#' @param title The title for the plot.
+#'
+#' @return A ggplot object representing the QQ plot.
+#'
+#' @examples
+#' set.seed(123)
+#' sample_data <- rnorm(100)
+#' qq_plot <- create_qq_plot(NULL, sample_data, "Custom X-axis Title", "Custom Y-axis Title", "Custom QQ Plot Title")
+#' print(qq_plot)
+#'
+#' @export
+create_qq_plot <- function(x, y, x_title = "Theoretical Quantiles", 
+                           y_title = "Sample Quantiles", title = "QQ Plot", theme = theme_bw(base_size = 14)) {
+  
+  gg_qqplot <- ggplot(data = data.frame(x = x, y = y),
+                      aes(x = x, y = y)) +
+    geom_point() +
+    geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+    labs(title = title,
+         x = x_title,
+         y = y_title) + theme
+  
+  return(gg_qqplot)
+}
+
+
 #' Save a patchwork of ggplot figures to a file
 #'
 #' This function takes a list of ggplot figures and saves them as a patchwork to a file specified by a base path and filename, split into multiple files if the list is longer than a given split N.

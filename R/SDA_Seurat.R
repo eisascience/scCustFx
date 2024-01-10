@@ -2,6 +2,124 @@
 
 
 
+
+#' This function to add imputed scores from gene loading, V3 is one component at a time selecting topN genes
+#'
+#' @param SerObj A seurat Object, with assay RNA and slot data
+#' @param sda_loadings matrix of sda loadings
+#' @param keepComps if NULL all else numeric or char vec
+#' @param sdaObjID id name to apped to comp names
+#' @param plot to plot or not 
+#' @return seurat obj with new SDA score comps in metadata
+#' @export
+ImputeSDA2SerV3 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T,
+                            TopNpos = 20, TopNneg=20, MetaExtraName=""){
+  
+  genes_overlap = intersect(rownames(SerObj), colnames(sda_loadings))
+  
+  
+  if(is.null(keepComps)) keepComps = 1:nrow(sda_loadings)
+  
+  for (KC in keepComps){
+    # KC  = keepComps[1]
+    
+    print(paste0("sda.", sdaObjID, ".V", KC, MetaExtraName))
+    
+    
+
+    
+    
+    if(! (is.null(TopNpos) & is.null(TopNneg)) ) {
+      print(paste0("Top N neg: ", TopNneg)); print(paste0("Top N pos: ", TopNpos))
+      
+      TopPos = names(sort(sda_loadings[KC, genes_overlap], decreasing = T))[1:TopNpos]
+      TopNeg = names(sort(sda_loadings[KC, genes_overlap], decreasing = F))[1:TopNneg]
+      
+      genes_overlap = c(TopPos, TopNeg)
+      print(genes_overlap)
+    }
+    
+    sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[KC, genes_overlap] %*% SerObj@assays$RNA@data[genes_overlap, ]))
+    colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", KC, MetaExtraName)
+    
+
+    
+    
+    if(doAsinh) {
+      SerObj = AddMetaData(SerObj, as.data.frame(asinh(sda_scores)))
+    } else {
+      SerObj = AddMetaData(SerObj, as.data.frame(sda_scores))
+    }
+    
+    
+    if(plot){
+      print(Seurat::FeaturePlot(SerObj, features = colnames(sda_scores), order = T) & 
+              ggplot2::scale_colour_gradientn(colours = c('navy', 'dodgerblue', 'white', 'gold', 'red')))
+    }
+    
+  }
+  return(SerObj)
+
+}
+
+
+
+#' This function to add imputed scores from gene loading
+#'
+#' @param SerObj A seurat Object, with assay RNA and slot data
+#' @param sda_loadings matrix of sda loadings
+#' @param keepComps if NULL all else numeric or char vec
+#' @param sdaObjID id name to apped to comp names
+#' @param plot to plot or not 
+#' @return seurat obj with new SDA score comps in metadata
+#' @export
+ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T){
+  
+  genes_overlap = intersect(rownames(SerObj), colnames(sda_loadings))
+  
+  if(is.null(keepComps)) keepComps = 1:nrow(sda_loadings)
+  
+  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA@data[genes_overlap, ]))
+  colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
+  
+  if(doAsinh) {
+    SerObj = AddMetaData(SerObj, as.data.frame(asinh(sda_scores)))
+  } else {
+    SerObj = AddMetaData(SerObj, as.data.frame(sda_scores))
+  }
+  
+  if(plot){
+    print(Seurat::FeaturePlot(SerObj, features = colnames(sda_scores), order = T) & 
+            ggplot2::scale_colour_gradientn(colours = c('navy', 'dodgerblue', 'white', 'gold', 'red')))
+  }
+  
+  
+  
+  
+  
+  CommonLoadingMat = t(as.matrix(sda_loadings)[keepComps, genes_overlap])
+  colnames(CommonLoadingMat) = paste0("sda.", sdaObjID, ".V", keepComps)
+  
+  
+  
+
+  SerObj = SDAScoreMeta2Reduction(SerObj = SerObj,
+                                       sdaComps = colnames(CommonLoadingMat), 
+                                       loadingMat = as.matrix(CommonLoadingMat),
+                                       reduction.key =  paste0("sda", sdaObjID, "_"), 
+                                       includeLoading = T,
+                                       assayName = "RNA", reduction.name = paste0("sda_", sdaObjID) )
+  
+  
+  
+  
+  
+  return(SerObj)
+  
+}
+
+
+
 #' This function to add imputed scores from gene loading
 #'
 #' @param SerObj A seurat Object, with assay RNA and slot data

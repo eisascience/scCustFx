@@ -1,3 +1,178 @@
+#' Generate a boxplot with jittered points for the percentage of values exceeding a threshold.
+#'
+#' @param SerObj The input data or object.
+#' @param FeatName The name of the feature variable.
+#' @param CutThresh The threshold value for categorizing values.
+#' @param MetaDataName The name of the metadata variable for grouping (default: "Population").
+#' @param TitleExtra Additional title text for the plot.
+#' @param col The color for the boxplot and jittered points (default: "#A6CEE3").
+#' @param MetaDataName2 The name of the second metadata variable (default: "SubjectId").
+#' @param ylab_text The label for the y-axis.
+#' @param xlab_text The label for the x-axis.
+#' @param base_size The base font size for the plot (default: 16).
+#' @param my_comparisons A vector specifying pairwise comparisons for statistical testing (default: NULL).
+#'
+#' @return A ggplot object representing the boxplot with jittered points.
+#'
+#' @examples
+#' # Example usage:
+#' FeatThrTab_boxplot(SerObj, FeatName = "Feature1", CutThresh = 0.5)
+#'
+#'
+#' @export
+FeatThrTab_boxplot <- function(SerObj, 
+                               FeatName = NULL, CutThresh = NULL,
+                               MetaDataName = "Population", TitleExtra = "", 
+                               col = "#A6CEE3", 
+                               MetaDataName2 = "SubjectId",
+                               ylab_text = "", xlab_text = "",
+                               base_size = 16, 
+                               my_comparisons = NULL){
+  
+  if(is.null(FeatName)) stop("FeatName is NULL")
+  if(is.null(MetaDataName)) {
+    warning("MetaDataName is NULL, setting MetaDataName  = 'orig.ident' ")
+    MetaDataName  = "orig.ident"
+  }
+  if(is.null(CutThresh)) stop("CutThresh is NULL")
+  if(length(FeatName) != 1) stop ("FeatName Length != 1")
+  
+  
+  tempDF <- FetchData(SerObj, vars = c(FeatName, MetaDataName, MetaDataName2))
+  # colnames(tempDF) <- c("var1", "var2", MetaDataName2, MetaDataName3)
+  
+  tempDF$GtThr = "FALSE"
+  tempDF$GtThr[tempDF[,FeatName]>=CutThresh] = "TRUE"
+  
+  tempDF$percent_gt = tempDF %>%
+    group_by(!!sym(MetaDataName), !!sym(MetaDataName2)) %>%
+    mutate(num_gt_thr = sum(GtThr == "TRUE"),
+           percent_gt = num_gt_thr / n()) %>%
+    ungroup() %>% pull(percent_gt) #%>% hist(breaks = 100)
+  
+  
+  
+  
+  subj_tissue_data <- aggregate(as.formula(paste("percent_gt ~", MetaDataName, "+", MetaDataName2)), 
+                                data = tempDF, FUN = mean)
+  
+  subj_tissue_data$percent_gt = subj_tissue_data$percent_gt *100
+  
+  print(table(subj_tissue_data[,MetaDataName]))
+  LevLeng = length(levels(subj_tissue_data[,MetaDataName]))
+  
+  library(ggpubr)
+  
+  
+  gg2 = ggboxplot(subj_tissue_data, x = MetaDataName, y = "percent_gt", 
+                  palette = c(rep(col, LevLeng)),
+                  # add = "jitter", 
+                  fill=MetaDataName, outlier.shape = NA) +
+    geom_jitter(alpha=.5, size=.8) +
+    theme_classic(base_size = base_size) +
+    ggtitle(TitleExtra) + 
+    xlab(xlab_text) + ylab(ylab_text)  +
+    theme(legend.position="none",
+          # legend.direction="horizontal",
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    scale_y_continuous(limits = c(0, 110));
+  
+  if(!is.null(my_comparisons)){
+    gg2 = gg2 +
+      stat_compare_means(comparisons = my_comparisons, method = "wilcox.test", label = "p.signif")
+  }
+  
+  
+  
+  return(gg2)
+  
+  
+}
+
+#' Plot violin plots with Wilcoxon p-values
+#'
+#' This function generates a plot of violin plots with Wilcoxon p-values
+#' for the given feature and groupings in a Seurat object.
+#'
+#' @param SerObj A Seurat object containing the data.
+#' @param feature The feature to plot.
+#' @param group.by The grouping variable to use for the plot (default: "ident").
+#' @param layer The layer to use for the plot (default: "data").
+#' @param GrpFacLevels Optional vector of grouping factor levels to plot.
+#' @param assay The assay to use for the plot (default: "RNA").
+#' @param colors A vector of colors to use for the plot.
+#' @param comparisons A list of pairwise comparisons to perform.
+#' @param title A string to use as the plot title.
+#' @param doJitter Whether to add jitter to the points (default: TRUE).
+#'
+#' @return A ggplot object.
+#' @export
+plot_violin_wpvalue <- function(SerObj, 
+                                feature, 
+                                group.by = "ident",
+                                layer="data", 
+                                GrpFacLevels=NULL,
+                                assay="RNA", 
+                                colors =col_vector, 
+                                comparisons = NULL, title="",
+                                doJitter = T){
+  
+  
+  
+  
+  library(ggpubr)
+  
+  v1 <- VlnPlot(SerObj, features =feature, assay = assay, group.by=group.by)
+  
+  v1 <- v1$data
+  colnames(v1) = c("Feat", "Grp")
+  
+  if (!is.null(GrpFacLevels)) {
+    v1$Grp <- factor(as.character(v1$Grp), levels = GrpFacLevels)
+  }
+  
+  
+  if(!is.null(comparisons)){
+    
+    if(class(comparisons) != "list") stop("GrpNames needs to be a list")
+    
+    if(doJitter){
+      ggviolin(v1, x = "Grp", y = "Feat", 
+               fill = "Grp",
+               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               add = "jitter",
+               add.params = list(size = .005, alpha = 0.05),
+               title = paste0("Wilcox p.value. :: ", title)) + 
+        stat_compare_means(comparisons = comparisons,
+                           label = "p.signif")
+    } else {
+      ggviolin(v1, x = "Grp", y = "Feat", fill = "Grp",
+               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               title = paste0("Wilcox p.value. :: ", title)) + 
+        stat_compare_means(comparisons = comparisons , label = "p.signif")
+    }
+    
+  } else {
+    if(doJitter){
+      
+      ggviolin(v1, x = "Grp", y = "Feat", 
+               fill = "Grp",
+               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               add = "jitter",
+               title = paste0("Wilcox p.value. :: ", title)) 
+    } else {
+      ggviolin(v1, x = "Grp", y = "Feat", fill = "Grp",
+               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               title = paste0("Wilcox p.value. :: ", title)) 
+    }
+  }
+  
+  
+  
+}
+
+
 
 #' This function generates a plot of gene loadings along genomic coordinates based on a Seurat object.
 #'
