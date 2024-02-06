@@ -17,6 +17,8 @@ PieDonut2(
   labelposition = getOption("PieDonut.labelposition", 2),
   labelpositionThreshold = 0.1,
   r0 = getOption("PieDonut.r0", 1.2),
+  r1 = getOption("PieDonut.r1", 1),
+  r2 = getOption("PieDonut.r2", 1.2),
   explode = NULL,
   selected = NULL,
   explodePos = 0.1,

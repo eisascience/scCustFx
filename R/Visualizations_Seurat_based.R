@@ -11,6 +11,11 @@
 #' @param xlab_text The label for the x-axis.
 #' @param base_size The base font size for the plot (default: 16).
 #' @param my_comparisons A vector specifying pairwise comparisons for statistical testing (default: NULL).
+#' @param limits A vector to define the limits of the percent axis (default: c(0, 110)).
+#' @param GT T/F to select greater than and equal to threshold if T else less than (default: T).
+#' @param StatMethod passed to stat_compare_means only in t.test and in wilcox.test (default: wilcox.test).
+#' @param StatLab passed to stat_compare_means  p.signif" (shows the significance levels), "p.format" (shows the formatted p value), (default: p.signif).
+#'
 #'
 #' @return A ggplot object representing the boxplot with jittered points.
 #'
@@ -27,7 +32,9 @@ FeatThrTab_boxplot <- function(SerObj,
                                MetaDataName2 = "SubjectId",
                                ylab_text = "", xlab_text = "",
                                base_size = 16, 
-                               my_comparisons = NULL){
+                               my_comparisons = NULL,
+                               limits = c(0, 110), GT=T, StatMethod = "wilcox.test",
+                               StatLab = "p.signif"){
   
   if(is.null(FeatName)) stop("FeatName is NULL")
   if(is.null(MetaDataName)) {
@@ -42,7 +49,9 @@ FeatThrTab_boxplot <- function(SerObj,
   # colnames(tempDF) <- c("var1", "var2", MetaDataName2, MetaDataName3)
   
   tempDF$GtThr = "FALSE"
-  tempDF$GtThr[tempDF[,FeatName]>=CutThresh] = "TRUE"
+  
+  if(GT) tempDF$GtThr[tempDF[,FeatName]>=CutThresh] = "TRUE"
+  if(!GT) tempDF$GtThr[tempDF[,FeatName]<CutThresh] = "TRUE"
   
   tempDF$percent_gt = tempDF %>%
     group_by(!!sym(MetaDataName), !!sym(MetaDataName2)) %>%
@@ -58,8 +67,8 @@ FeatThrTab_boxplot <- function(SerObj,
   
   subj_tissue_data$percent_gt = subj_tissue_data$percent_gt *100
   
-  print(table(subj_tissue_data[,MetaDataName]))
-  LevLeng = length(levels(subj_tissue_data[,MetaDataName]))
+  # print(table(subj_tissue_data[,MetaDataName]))
+  LevLeng = length(levels(factor(as.character(subj_tissue_data[,MetaDataName]))))
   
   library(ggpubr)
   
@@ -76,11 +85,11 @@ FeatThrTab_boxplot <- function(SerObj,
           # legend.direction="horizontal",
           legend.title = element_blank(),
           axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-    scale_y_continuous(limits = c(0, 110));
+    scale_y_continuous(limits = limits);
   
   if(!is.null(my_comparisons)){
     gg2 = gg2 +
-      stat_compare_means(comparisons = my_comparisons, method = "wilcox.test", label = "p.signif")
+      stat_compare_means(comparisons = my_comparisons, method = StatMethod , label = StatLab)
   }
   
   

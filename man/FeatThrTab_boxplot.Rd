@@ -15,7 +15,11 @@ FeatThrTab_boxplot(
   ylab_text = "",
   xlab_text = "",
   base_size = 16,
-  my_comparisons = NULL
+  my_comparisons = NULL,
+  limits = c(0, 110),
+  GT = T,
+  StatMethod = "wilcox.test",
+  StatLab = "p.signif"
 )
 }
 \arguments{
@@ -40,6 +44,14 @@ FeatThrTab_boxplot(
 \item{base_size}{The base font size for the plot (default: 16).}
 
 \item{my_comparisons}{A vector specifying pairwise comparisons for statistical testing (default: NULL).}
+
+\item{limits}{A vector to define the limits of the percent axis (default: c(0, 110)).}
+
+\item{GT}{T/F to select greater than and equal to threshold if T else less than (default: T).}
+
+\item{StatMethod}{passed to stat_compare_means only in t.test and in wilcox.test (default: wilcox.test).}
+
+\item{StatLab}{passed to stat_compare_means  p.signif" (shows the significance levels), "p.format" (shows the formatted p value), (default: p.signif).}
 }
 \value{
 A ggplot object representing the boxplot with jittered points.
