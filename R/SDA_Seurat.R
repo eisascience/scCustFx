@@ -1,6 +1,353 @@
 
+#' Preprocess Seurat Object for Single-cell Data Analysis
+#'
+#' This function prepares a Seurat object for single-cell data analysis (SDA) by filtering features (genes)
+#' and cells based on various criteria such as minimum feature count, minimum number of cells expressing a feature,
+#' expression thresholds, inclusion and exclusion lists, and library size. It also checks and warns about 
+#' the maximum number of cells the SDA can handle. The function utilizes the Seurat package for accessing
+#' assay data and performs initial quality control checks and data normalization.
+#'
+#' @param seuratObj A Seurat object containing single-cell RNA sequencing data.
+#' @param assayName The name of the assay to use, default is "RNA".
+#' @param Layer The data layer to use, default is "counts".
+#' @param minFeatureCount Minimum count for a feature to be included, default is 1.
+#' @param minCellsExpressingFeature Minimum number of cells that must express a feature, default is 0.
+#' @param perCellExpressionThreshold Threshold for expression level per cell, default is 0.
+#' @param featureInclusionList A list of features to forcibly include, default is NULL.
+#' @param featureExclusionList A list of features to exclude, default is NULL.
+#' @param maxFeaturesDiscarded The maximum proportion (0-1) or absolute number of features to discard, default is 0.75.
+#' @param minLibrarySize The minimum library size required for a cell to be included, default is 0.
+#'
+#' @return A list containing the filtered assay data (`SerObj.DGE`), the list of features used (`featuresToUse`),
+#'         and the minimum library size considered (`minLibrarySize`).
+#'
+#' @export
+SDA_ser_preproc <- function(seuratObj, 
+                            assayName = "RNA", 
+                            Layer = "counts",
+                            minFeatureCount = 1,
+                            minCellsExpressingFeature = 0,
+                            perCellExpressionThreshold = 0,
+                            featureInclusionList = NULL,
+                            featureExclusionList = NULL,
+                            maxFeaturesDiscarded = 0.75,
+                            minLibrarySize = 0){
+  
+
+  
+  SerObj.DGE <- Seurat::GetAssayData(seuratObj, 
+                                     assay = assayName, 
+                                     layer = Layer)
+  
+  n_cells <- ncol(SerObj.DGE)
+  
+  if (n_cells > 200000) {
+    stop("SDA has shown to max handle ~200K cells ")
+  } else if (n_cells > 150000) {
+    warning("SDA has shown to max handle ~150K cells ")
+  }
+  
+  print(paste0("Initial features: ", nrow(SerObj.DGE)))
+  print(paste0("Initial cells: ", ncol(SerObj.DGE)))
+  
+  featuresToUse <- rownames(SerObj.DGE)
+  
+  
+  
+  
+  if (!is.na(minFeatureCount) && minFeatureCount > 0) {
+    
+    
+    numFeatures <- length(featuresToUse)
+    
+    hist(asinh(Matrix::rowSums(SerObj.DGE[featuresToUse, ])), breaks = 100, main = "lib size pre filter", xlab = "asinh(lib size)")
+    
+    
+    featuresToUse <- featuresToUse[Matrix::rowSums(SerObj.DGE[featuresToUse, 
+    ]) >= minFeatureCount]
+    
+    
+    hist(asinh(Matrix::rowSums(SerObj.DGE[featuresToUse, ])), breaks = 100, main = "lib size post filter", xlab = "asinh(lib size)")
+    
+    
+    print(paste0("After filtering to features with total counts of at least ", 
+                 minFeatureCount, ": ", length(featuresToUse), " features remain (", 
+                 scales::percent(length(featuresToUse)/numFeatures), 
+                 " of input)"))
+    
+    
+  }
+  
+  
+  if (!is.na(minCellsExpressingFeature) && minCellsExpressingFeature > 
+      0) {
+    
+    
+    if (is.na(perCellExpressionThreshold)) {
+      stop("Must provide perCellExpressionThreshold when minCellsExpressingFeature is above zero")
+    }
+    
+    print("Filtering on minCellsExpressingFeature")
+    
+    if (minCellsExpressingFeature < 1) {
+      minCellsExpressingFeatureRaw <- minCellsExpressingFeature
+      minCellsExpressingFeature <- floor(minCellsExpressingFeatureRaw * 
+                                           ncol(seuratObj))
+      print(paste0("Interpreting minCellsExpressingFeature as a percentage of total cells (", 
+                   ncol(seuratObj), "), converted from ", minCellsExpressingFeatureRaw, 
+                   " to ", minCellsExpressingFeature))
+    }
+    
+    numFeatures <- length(featuresToUse)
+    numNonZeroCells <- Matrix::rowSums(SerObj.DGE >= perCellExpressionThreshold)
+    
+    featuresToUse <- names(numNonZeroCells[which(numNonZeroCells >= 
+                                                   minCellsExpressingFeature)])
+    print(paste0("After limiting to features with expression GTE ", 
+                 perCellExpressionThreshold, " in at least ", minCellsExpressingFeature, 
+                 " cells: ", length(featuresToUse), " features remain (", 
+                 scales::percent(length(featuresToUse)/numFeatures), 
+                 " of input)"))
+    rm(numFeatures)
+  }
+  
+  if (!all(is.null(featureInclusionList))) {
+    featureInclusionList <- RIRA::ExpandGeneList(featureInclusionList)
+    preExisting <- intersect(featuresToUse, featureInclusionList)
+    print(paste0("Adding ", length(featureInclusionList), 
+                 " features, of which ", length(preExisting), " are already present"))
+    featuresToUse <- unique(c(featuresToUse, featureInclusionList))
+    print(paste0("Total after: ", length(featuresToUse)))
+  }
+  
+  if (!all(is.null(featureExclusionList))) {
+    featureExclusionList <- RIRA::ExpandGeneList(featureExclusionList)
+    preExisting <- intersect(featuresToUse, featureExclusionList)
+    print(paste0("Excluding ", length(featureExclusionList), 
+                 " features(s), of which ", length(preExisting), " are present"))
+    featuresToUse <- unique(featuresToUse[!(featuresToUse %in% 
+                                              featureExclusionList)])
+    print(paste0("Total after: ", length(featuresToUse)))
+  }
+  
+  if (length(featuresToUse) == 0) {
+    stop("No features remain after filtering")
+  }
+  
+  if (!is.null(maxFeaturesDiscarded)) {
+    if (maxFeaturesDiscarded < 1) {
+      maxFeaturesDiscarded <- maxFeaturesDiscarded * nrow(SerObj.DGE)
+    }
+    featsDiscarded <- nrow(SerObj.DGE) - length(featuresToUse)
+    if (featsDiscarded > maxFeaturesDiscarded) {
+      stop(paste0("The total number of features discarded, ", 
+                  featsDiscarded, " exceeds the threshold of ", 
+                  maxFeaturesDiscarded))
+    }
+  }
+  
+  df <- data.frame(x = Matrix::colSums(SerObj.DGE[featuresToUse, 
+  ]))
+  dens <- stats::density(df$x)
+  mx <- dens$x[which.max(dens$y)]
+  
+  P1 <- ggplot(df, aes(x = x)) + scale_x_sqrt() + geom_density() + 
+    ggtitle("Total features per cell") + labs(x = "Features/Cell", 
+                                              y = "Density") + geom_vline(xintercept = mx, color = "red") + 
+    ggtitle(paste0("Library Size: Peak = ", mx))
+  
+  if (!is.null(minLibrarySize)) {
+    P1 <- P1 + geom_vline(xintercept = minLibrarySize, color = "red")
+  }
+  print(P1)
+  print("starting dropsim normaliseDGE")
+  
+  return(list(SerObj.DGE = SerObj.DGE, featuresToUse = featuresToUse, minLibrarySize = minLibrarySize))
+ 
+}
 
 
+
+#' Prepare and Save Normalized Gene Expression Data for SDA
+#'
+#' This function prepares the environment for single-cell data analysis (SDA) by saving
+#' normalized gene expression data to a specified output folder. It ensures that the
+#' output directory exists, appending a trailing slash if necessary, and utilizes
+#' SDAtools for data export. The function also prepares a results directory within
+#' the output folder for further analysis.
+#'
+#' @param normedDGE A matrix or data frame containing normalized gene expression data,
+#'   ready for analysis. This data is expected to be preprocessed and normalized appropriately.
+#' @param outputFolder A character string specifying the path to the output folder where
+#'   the normalized data and results will be saved. The function will create the directory
+#'   if it does not exist, and will ensure it ends with a slash for consistency in path handling.
+#'
+#' @return A list containing two elements: `resultsDir` indicating the path to the results
+#'   directory, and `rawDataFile` specifying the path to the saved normalized gene expression data file.
+#'
+#' @export
+prepNormedDGE_SDA <- function(normedDGE, outputFolder){
+  
+  if (!dir.exists(outputFolder)) {
+    dir.create(outputFolder, recursive = TRUE)
+  }
+  if (!endsWith(outputFolder, "/")) {
+    outputFolder <- paste0(outputFolder, "/")
+  }
+  
+  
+  if(class(normedDGE)[1]!="matrix") {
+    print("normedDGE needs to be a non-sparse matrix")
+    normedDGE= as.matrix(normedDGE)
+  }
+  print(paste0("Saving raw data to: ", outputFolder))
+  
+  
+  SDAtools::export_data(normedDGE, path = outputFolder, name = "rawData")
+  
+  rawDataFile <- paste0(outputFolder, "rawData")
+  resultsDir <- paste0(outputFolder, "results/")
+  print(paste0("Saving results to: ", resultsDir))
+  
+  if (dir.exists(resultsDir)) {
+    message(paste0("existing result folder: ", resultsDir))
+    # unlink(resultsDir, recursive = TRUE)
+  }
+  
+  # print("Running SDA")
+  # if (!file.exists(path.sda)) {
+  #   x <- unname(Sys.which(path.sda))
+  #   if (x != "") {
+  #     print(paste0("Found SDA under PATH: ", x))
+  #     path.sda <- x
+  #   }
+  # }
+  
+  print(resultsDir)
+  return(list(resultsDir = resultsDir, rawDataFile = rawDataFile))
+  
+}
+
+
+#' Run SDA V1.1 in 2D i.e., matrix form
+#'
+#' Executes the SDA algorithm on preprocessed and normalized single-cell gene expression data,
+#' allowing for dimensionality reduction and analysis. This function is designed to work with
+#' the specified version of SDA, taking in several parameters to customize the analysis process,
+#' including the number of components, iteration settings, and parallel processing options.
+#'
+#' @param path.sda A character string specifying the path to the SDA software executable.
+#' @param resultsDir A character string specifying the directory where the SDA results will be saved.
+#' @param rawDataFile A character string specifying the path to the preprocessed and normalized gene
+#'   expression data file to be analyzed.
+#' @param numComps Integer, the number of components to be used in the analysis, default is 30.
+#' @param max_iter Integer, the maximum number of iterations for the SDA algorithm, default is 100.
+#' @param save_freq Integer, frequency of saving interim results, default is 20 iterations.
+#' @param set_seed Integer, the seed for random number generation to ensure reproducibility, default is 1234.
+#' @param n_cells Integer, the number of cells in the dataset to be analyzed.
+#' @param nThreads Integer, the number of threads for parallel processing, default is 6.
+#'   If greater than 1, eigen decomposition will be done in parallel.
+#' @param num_blocks Integer, the number of blocks to divide the dataset into for parallel processing, default is 6.
+#'
+#' @return Invisible NULL. The function is called for its side effects, including the execution
+#'   of the SDA analysis and saving of results to the specified directory.
+#' @export
+runSDAv1_2D <- function(path.sda, resultsDir, rawDataFile, numComps = 30, max_iter = 100, save_freq = 20, 
+                        set_seed = 1234, n_cells, nThreads = 6, num_blocks = 6){
+  
+  
+  SDAtools::run_SDA(sda_location = path.sda, out = resultsDir, 
+                    data = rawDataFile, num_comps = numComps, max_iter = max_iter, 
+                    save_freq = save_freq, set_seed = set_seed, N = n_cells, 
+                    eigen_parallel = (nThreads > 1), ignore_missing = FALSE, 
+                    num_blocks = num_blocks, num_openmp_threads = nThreads)
+  
+  
+  
+}
+
+#' Post-process Single-cell Data Analysis (SDA) Results
+#'
+#' This function loads the results from an SDA analysis, enriches them with additional metadata such
+#' as cell barcodes and feature (gene) names, computes component statistics, and optionally performs
+#' Gene Ontology (GO) enrichment analysis on the components. It is designed to work with results
+#' generated by the SDAtools and provides a comprehensive overview of the analysis for further interpretation.
+#'
+#' @param resultsDir A character string specifying the directory where the SDA analysis results are stored.
+#' @param outputFolder A character string specifying the path to the output folder where additional
+#'   processed results and analyses will be saved.
+#' @param normedDGE A matrix or data frame containing the normalized gene expression data used in the
+#'   SDA analysis. Row names should correspond to features (genes), and column names should correspond to cell barcodes.
+#' @param storeGoEnrichment A logical value indicating whether to perform and store Gene Ontology (GO)
+#'   enrichment analysis on the analysis components. Default is `TRUE`.
+#'
+#' @return A list containing the enriched SDA results, including cell barcodes, feature names, component
+#'   statistics, and optionally GO enrichment analysis results.
+#' @export
+SDApostprocessing <- function(resultsDir, 
+                              outputFolder, 
+                              normedDGE, 
+                              orgDb = "org.Hs.eg.db", 
+                              # mouse org.Mm.eg.db
+                              # rhesus macaque org.Mmu.eg.db
+                              storeGoEnrichment = T){
+  
+  results <- SDAtools::load_results(results_folder = resultsDir, 
+                                    data_path = outputFolder)
+  
+  results$CellBarcodes <- colnames(normedDGE)
+  results$Features <- rownames(normedDGE)
+  results <-  SDA.AddCompStats(results)
+  
+  if (storeGoEnrichment) {
+    results$goEnrichment <- SDA.GO_Enrichment(results, components = 1:nrow(results$loadings[[1]]), orgDb=orgDb)
+  }
+  
+ 
+  return(results)
+}
+
+
+
+
+#' Diagnostic Checks on SDA Results
+#'
+#' Executes a series of diagnostic checks on Single-cell Data Analysis (SDA) results to
+#' assess convergence, distribution of loadings and scores, and Posterior Inclusion Probability (PIP)
+#' distributions. The function uses `SDAtools` for generating diagnostic outputs and handles
+#' errors gracefully for each diagnostic step, ensuring that all possible checks are attempted.
+#'
+#' @details This function is designed to be run with SDA results available in the global environment
+#'   or within its scope. It attempts to run convergence checks, loading and score distributions, and
+#'   PIP distributions. If an error occurs during any of the checks, it catches the error, prints
+#'   an error message specific to the failed check, and continues with the next checks.
+#'
+#' @return Invisible NULL. The function is called for its side effects, which include printing
+#'   diagnostic information and error messages directly to the console.
+#'
+#' @export
+SDAresChecks <- function(results){
+  tryCatch({
+    print(SDAtools::check_convergence(results))
+    print(SDAtools::loading_distribution(results))
+    print(SDAtools::scores_distribution(results))
+  }, error = function(e) {
+    print(paste0("Error generating SDA first plots"))
+    print(conditionMessage(e))
+  })
+  tryCatch({
+    print(SDAtools::PIP_distribution(results))
+  }, error = function(e) {
+    print(paste0("Error generating SDA PIP_distribution"))
+    print(conditionMessage(e))
+  })
+  tryCatch({
+    print(SDAtools::PIP_threshold_distribution(results))
+  }, error = function(e) {
+    print(paste0("Error generating SDA PIP_threshold_distribution"))
+    print(conditionMessage(e))
+  })
+}
 
 
 #' This function to add imputed scores from gene loading, V3 is one component at a time selecting topN genes
