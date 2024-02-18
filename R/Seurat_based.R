@@ -2106,19 +2106,19 @@ compressSerHD5 <- function(SerObj = NULL, load.path = NULL, overwrite = F,
 #' @title scatter_plot_seurat
 #'
 #' @description create scatter plot
-#' @param seurat_obj A Seurat Object 
+#' @param SerObj A Seurat Object 
 #' @return ggplot
 #' @export
-scatter_plot_seurat <- function(seurat_obj, meta_feature, gene_name, x_split_value, y_split_value, 
+scatter_plot_seurat <- function(SerObj, meta_feature, gene_name, x_split_value, y_split_value, 
                                 assay = "RNA", layer="counts", base_size = 11) {
   require(broom)
-  DefaultAssay(seurat_obj) = assay
+  DefaultAssay(SerObj) = assay
   
-  x_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == x_split_value)
-  y_cell_ids <- which(seurat_obj@meta.data[,meta_feature] == y_split_value)
+  x_cell_ids <- which(SerObj@meta.data[,meta_feature] == x_split_value)
+  y_cell_ids <- which(SerObj@meta.data[,meta_feature] == y_split_value)
   
-  x_expr <- GetAssayData(seurat_obj, layer = layer)[gene_name, x_cell_ids]
-  y_expr <- GetAssayData(seurat_obj, layer = layer)[gene_name, y_cell_ids]
+  x_expr <- GetAssayData(SerObj, layer = layer)[gene_name, x_cell_ids]
+  y_expr <- GetAssayData(SerObj, layer = layer)[gene_name, y_cell_ids]
   
   downSampMin = min(c(length(x_expr), length(y_expr)))
   
@@ -2158,3 +2158,47 @@ scatter_plot_seurat <- function(seurat_obj, meta_feature, gene_name, x_split_val
           legend.title = element_blank())
   
 }
+
+
+
+#' Update Cluster Labels Based on Frequency
+#'
+#' This function updates the labels of a specified column in a Seurat object's metadata
+#' based on the decreasing frequency of occurrence. Optionally, it can store the updated
+#' labels in a new column if a sorted column name is provided; otherwise, it overwrites
+#' the original column.
+#'
+#' @param SerObj A Seurat object containing the data and metadata.
+#' @param columnName The name of the column in the Seurat object's metadata to analyze
+#' and sort by frequency.
+#' @param sortedColumnName Optional. The name of the column where the sorted labels
+#' should be stored. If NULL, the function will overwrite the original column.
+#'
+#' @return The Seurat object with updated cluster labels in its metadata. If
+#' `sortedColumnName` is provided, the updated labels are stored in this new column;
+#' otherwise, the original column is overwritten with the updated labels.
+#'
+#'
+#' @export
+updateClusterLabels <- function(SerObj, columnName, sortedColumnName=NULL) {
+  # Check if columnName exists in Seurat object metadata
+  if (!columnName %in% colnames(SerObj@meta.data)) {
+    stop("Column name not found in Seurat object metadata.")
+  }
+  
+  # Count occurrences of each label and sort in decreasing order
+  labelCounts <- sort(table(SerObj@meta.data[[columnName]]), decreasing = TRUE)
+  
+  # Create a mapping of old labels to new labels
+  newLabels <- setNames(seq_along(labelCounts) - 1, names(labelCounts))
+  
+  # Decide on the column to update: either overwrite or create a new one
+  targetColumn <- if (is.null(sortedColumnName)) columnName else sortedColumnName
+  
+  # Update the labels in the Seurat object metadata
+  SerObj@meta.data[[targetColumn]] <- naturalsort::naturalfactor(as.character(newLabels[as.character(SerObj@meta.data[[columnName]])]))
+  
+  return(SerObj)
+}
+
+

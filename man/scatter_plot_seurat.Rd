@@ -5,7 +5,7 @@
 \title{scatter_plot_seurat}
 \usage{
 scatter_plot_seurat(
-  seurat_obj,
+  SerObj,
   meta_feature,
   gene_name,
   x_split_value,
@@ -16,7 +16,7 @@ scatter_plot_seurat(
 )
 }
 \arguments{
-\item{seurat_obj}{A Seurat Object}
+\item{SerObj}{A Seurat Object}
 }
 \value{
 ggplot

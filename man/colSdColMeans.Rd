@@ -2,14 +2,7 @@
 % Please edit documentation in R/Normalizations.R
 \name{colSdColMeans}
 \alias{colSdColMeans}
-\title{colSdColMeans
-
-Calculate Column Standard Deviations
-
-Computes the standard deviation of each column in a matrix, optionally removing NA values.
-This function is optimized for matrices, including sparse matrices from the Matrix package,
-ensuring efficient computation without densifying the sparse matrix. The standard deviation
-is computed in a way that is mindful of potential NA values, based on the user's choice.}
+\title{colSdColMeans}
 \usage{
 colSdColMeans(x, na.rm = TRUE)
 }
@@ -20,5 +13,10 @@ colSdColMeans(x, na.rm = TRUE)
 A quantile-based normalized matrix
 }
 \description{
-a sparse implementation of dropsim::normaliseDGE()
+a sparse implementation of dropsim::normaliseDGE() 
+Calculate Column Standard Deviations
+Computes the standard deviation of each column in a matrix, optionally removing NA values.
+This function is optimized for matrices, including sparse matrices from the Matrix package,
+ensuring efficient computation without densifying the sparse matrix. The standard deviation
+is computed in a way that is mindful of potential NA values, based on the user's choice.
 }
