@@ -5,7 +5,7 @@
 \title{Custom Dot Plot Visualization for Seurat Objects}
 \usage{
 JustDots(
-  ComboSerObj,
+  SerObj,
   mat,
   markerVec,
   pairedList2,
@@ -19,11 +19,12 @@ JustDots(
   rowdendside = "left",
   fontsize = 12,
   titlefontsize = 14,
-  gap = 0
+  gap = 0,
+  assay = "RNA"
 )
 }
 \arguments{
-\item{ComboSerObj}{A Seurat object containing the data to be visualized.}
+\item{SerObj}{A Seurat object containing the data to be visualized.}
 
 \item{mat}{A matrix of data to be visualized, typically derived from a Seurat object.}
 
@@ -32,7 +33,7 @@ JustDots(
 \item{pairedList2}{A named list where each name corresponds to a marker gene in `markerVec`
 and each value is the name to replace it with in the plot.}
 
-\item{labelColumn}{The name of the metadata column in `ComboSerObj` to use for labeling.}
+\item{labelColumn}{The name of the metadata column in `SerObj` to use for labeling.}
 
 \item{rowsplit}{Optional vector specifying how to split rows in the plot; NULL means no splitting.}
 

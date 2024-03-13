@@ -7,7 +7,7 @@
 DotPlot2(
   SerObj,
   group.by,
-  slot = "data",
+  layer = "data",
   assay = "RBA",
   markerVec,
   rowsplit = NULL,
@@ -27,7 +27,7 @@ DotPlot2(
 
 \item{group.by}{The name of the metadata column in `SerObj` to group the data by.}
 
-\item{slot}{The slot from which to retrieve data. Common slots include "data", "scale.data", and "counts".}
+\item{layer}{The layer from which to retrieve data. Common layers include "data", "scale.data", and "counts".}
 
 \item{assay}{The name of the assay to use for data retrieval. Default is "RBA".}
 
@@ -63,7 +63,7 @@ It averages expression data by specified groups and then utilizes a customized
 plotting function to display the results.
 }
 \examples{
-DotPlot2(mySeuratObject, group.by = "ident", slot = "data", assay = "RNA",
+DotPlot2(mySeuratObject, group.by = "ident", layer = "data", assay = "RNA",
          markerVec = c("GeneA", "GeneB", "GeneC"))
 
 }

@@ -420,7 +420,7 @@ ImputeSDA2SerV3 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", p
 #' @param plot to plot or not 
 #' @return seurat obj with new SDA score comps in metadata
 #' @export
-ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T){
+ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T, MakeReduc=T){
   
   genes_overlap = intersect(rownames(SerObj), colnames(sda_loadings))
   
@@ -450,13 +450,16 @@ ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", p
   
   
 
-  SerObj = SDAScoreMeta2Reduction(SerObj = SerObj,
-                                       sdaComps = colnames(CommonLoadingMat), 
-                                       loadingMat = as.matrix(CommonLoadingMat),
-                                       reduction.key =  paste0("sda", sdaObjID, "_"), 
-                                       includeLoading = T,
-                                       assayName = "RNA", reduction.name = paste0("sda_", sdaObjID) )
-  
+  if(MakeReduc){
+    SerObj = SDAScoreMeta2Reduction(SerObj = SerObj,
+                                    sdaComps = colnames(CommonLoadingMat), 
+                                    loadingMat = as.matrix(CommonLoadingMat),
+                                    reduction.key =  paste0("sda", sdaObjID, "_"), 
+                                    includeLoading = T,
+                                    assayName = "RNA", reduction.name = paste0("sda_", sdaObjID) )
+    
+  }
+ 
   
   
   

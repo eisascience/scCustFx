@@ -7,7 +7,7 @@
 #'
 #' @param SerObj A Seurat object containing the data to be visualized.
 #' @param group.by The name of the metadata column in `SerObj` to group the data by.
-#' @param slot The slot from which to retrieve data. Common slots include "data", "scale.data", and "counts".
+#' @param layer The layer from which to retrieve data. Common layers include "data", "scale.data", and "counts".
 #' @param assay The name of the assay to use for data retrieval. Default is "RBA".
 #' @param markerVec A vector of marker genes to include in the plot.
 #' @param rowsplit Optional. A vector specifying how to split rows in the plot. NULL means no splitting.
@@ -24,13 +24,13 @@
 #' @return Generates a dot plot visualization based on the provided Seurat object and parameters.
 #'
 #' @examples
-#' DotPlot2(mySeuratObject, group.by = "ident", slot = "data", assay = "RNA",
+#' DotPlot2(mySeuratObject, group.by = "ident", layer = "data", assay = "RNA",
 #'          markerVec = c("GeneA", "GeneB", "GeneC"))
 #'
 #' @importFrom circlize circos.initialize circos.par circos.trackPlotRegion circos.text circos.points
 #' @importFrom tidyr gather spread
 #' @export
-DotPlot2 <- function(SerObj, group.by, slot="data", assay="RBA", markerVec, 
+DotPlot2 <- function(SerObj, group.by, layer="data", assay="RBA", markerVec, 
                      rowsplit = NULL, columnsplit = NULL, 
                      size = 6, coldend = FALSE, rowdend = FALSE, 
                      coldendside = "bottom", rowdendside = "left", 
@@ -39,10 +39,19 @@ DotPlot2 <- function(SerObj, group.by, slot="data", assay="RBA", markerVec,
   library(circlize)
   library(tidyr)
   
-  avgSeurat <- Seurat::AverageExpression(SerObj, group.by = group.by,
-                                         slot = slot, return.seurat = TRUE,
-                                         assays = assay)
-  mat <- as.matrix(Seurat::GetAssayData(avgSeurat, slot = slot))
+  # avgSeurat <- Seurat::AverageExpression(SerObj, group.by = group.by,
+  #                                        layer = layer, return.seurat = TRUE,
+  #                                        assays = assay)
+  
+  avgSeurat <- Seurat::AggregateExpression(SerObj, 
+                                           assays = assay, 
+                      features = markerVec, 
+                      return.seurat = T, 
+                      group.by = group.by, add.ident = NULL,
+                      normalization.method = "LogNormalize", 
+                      scale.factor = 10000, margin = 1, verbose = TRUE) 
+  
+  mat <- as.matrix(Seurat::GetAssayData(avgSeurat, layer = layer))
   
   JustDots(SerObj, mat, 
            markerVec = markerVec, 
@@ -51,7 +60,8 @@ DotPlot2 <- function(SerObj, group.by, slot="data", assay="RBA", markerVec,
            rowsplit = rowsplit, columnsplit = columnsplit, 
            size = size, coldend = coldend, rowdend = rowdend, 
            coldendside = coldendside, rowdendside = rowdendside, 
-           fontsize = fontsize, titlefontsize = titlefontsize, gap = gap)
+           fontsize = fontsize, titlefontsize = titlefontsize, gap = gap,
+           assay=assay)
 }
 
 #' Custom Dot Plot Visualization for Seurat Objects
@@ -61,12 +71,12 @@ DotPlot2 <- function(SerObj, group.by, slot="data", assay="RBA", markerVec,
 #' and incorporating dendrograms. It scales the expression data, applies custom naming conventions,
 #' and utilizes a heatmap to represent data visually.
 #'
-#' @param ComboSerObj A Seurat object containing the data to be visualized.
+#' @param SerObj A Seurat object containing the data to be visualized.
 #' @param mat A matrix of data to be visualized, typically derived from a Seurat object.
 #' @param markerVec A vector of marker genes to be included in the plot.
 #' @param pairedList2 A named list where each name corresponds to a marker gene in `markerVec`
 #' and each value is the name to replace it with in the plot.
-#' @param labelColumn The name of the metadata column in `ComboSerObj` to use for labeling.
+#' @param labelColumn The name of the metadata column in `SerObj` to use for labeling.
 #' @param rowsplit Optional vector specifying how to split rows in the plot; NULL means no splitting.
 #' @param columnsplit Optional vector specifying how to split columns in the plot; NULL means no splitting.
 #' @param size Size of the dots in the plot.
@@ -92,7 +102,7 @@ DotPlot2 <- function(SerObj, group.by, slot="data", assay="RBA", markerVec,
 #' @importFrom ComplexHeatmap Heatmap
 #' @importFrom grid grid.circle gpar unit
 #' @export
-JustDots <- function(ComboSerObj, mat, 
+JustDots <- function(SerObj, mat, 
                      markerVec, 
                      #pairedList, 
                      pairedList2, 
@@ -102,13 +112,13 @@ JustDots <- function(ComboSerObj, mat,
                      rowsplit = NULL, columnsplit = NULL, 
                      size, coldend = TRUE, rowdend = TRUE, 
                      coldendside = "bottom", rowdendside = "left", 
-                     fontsize = 12, titlefontsize = 14, gap = 0){
+                     fontsize = 12, titlefontsize = 14, gap = 0, assay = "RNA"){
   
   
   mat <- mat  %>% as.data.frame() %>% filter(rownames(mat) %in% markerVec) %>% as.matrix() %>% pheatmap:::scale_mat(scale = 'row') %>% as.data.frame()
   
   
-  colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
+  # colnames(mat) <- CellMembrane::RenameUsingCD(colnames(mat))
   
   mat <- t(as.matrix(mat)) %>% as.data.frame()
   mat1 <- mat
@@ -126,10 +136,12 @@ JustDots <- function(ComboSerObj, mat,
   fullorder <- rownames(mat)
   fullorder1 <- rownames(mat1)
   
-  plt <- Seurat::DotPlot(ComboSerObj, features = unique(markerVec), group.by = labelColumn, assay = "RNA")
+  plt <- Seurat::DotPlot(SerObj, features = unique(markerVec), group.by = labelColumn, assay = assay)
   pct <- plt$data %>% select(pct.exp, id, features.plot) %>% pivot_wider(id_cols = features.plot, names_from = id, values_from = pct.exp) %>% as.data.frame()
   row.names(pct) <- pct$features.plot
   pct <- pct %>% select(-features.plot) %>% as.matrix() %>% t()
+  
+  rownames(pct) = fullorder1
   
   pct <- pct[fullorder1,]
   colordering <- colnames(mat1)
@@ -158,7 +170,7 @@ JustDots <- function(ComboSerObj, mat,
                             cluster_columns = TRUE,
                             row_names_gp = grid::gpar(fontsize = fontsize),
                             column_names_gp = grid::gpar(fontsize = fontsize),
-                            column_title = "RNA Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
+                            column_title = "Markers\n", column_title_gp = grid::gpar(fontsize = titlefontsize, fontface = "bold"), name = "Scaled Avg. Exp.", show_row_dend = rowdend, show_column_dend = coldend, show_heatmap_legend = FALSE
     )
   return(P1)
 }
@@ -170,7 +182,7 @@ JustDots <- function(ComboSerObj, mat,
 #' exploration of gene expression patterns across different cell types or conditions
 #' defined in the dataset.
 #'
-#' @param ComboSerObj A Seurat object containing single-cell RNA-seq data.
+#' @param SerObj A Seurat object containing single-cell RNA-seq data.
 #' @param labelColumn A string specifying the name of the column in the metadata of
 #' the Seurat object that defines the groups (e.g., cell types or conditions) for
 #' which the average expression should be calculated.
@@ -186,12 +198,12 @@ JustDots <- function(ComboSerObj, mat,
 #'
 #' @importFrom Seurat AverageExpression GetAssayData
 #' @export
-GetAvgExpressionMatrix <- function(ComboSerObj, labelColumn, markerVec) {
-  avgSeurat <- Seurat::AverageExpression(ComboSerObj, group.by = labelColumn,
+GetAvgExpressionMatrix <- function(SerObj, labelColumn, markerVec) {
+  avgSeurat <- Seurat::AverageExpression(SerObj, group.by = labelColumn,
                                          features = markerVec,
-                                         slot = 'data', return.seurat = T,
+                                         layer = 'data', return.seurat = T,
                                          assays = 'RNA')
   # avgSeurat <- Seurat::NormalizeData(avgSeurat)
-  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, slot = 'data')))
+  mat <- t(as.matrix(Seurat::GetAssayData(avgSeurat, layer = 'data')))
   return(mat)
 }

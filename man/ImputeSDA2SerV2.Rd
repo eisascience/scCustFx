@@ -10,7 +10,8 @@ ImputeSDA2SerV2(
   keepComps = NULL,
   sdaObjID = "",
   plot = F,
-  doAsinh = T
+  doAsinh = T,
+  MakeReduc = T
 )
 }
 \arguments{

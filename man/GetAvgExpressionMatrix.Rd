@@ -4,10 +4,10 @@
 \alias{GetAvgExpressionMatrix}
 \title{Calculate Average Expression Matrix for Marker Genes in Seurat Object}
 \usage{
-GetAvgExpressionMatrix(ComboSerObj, labelColumn, markerVec)
+GetAvgExpressionMatrix(SerObj, labelColumn, markerVec)
 }
 \arguments{
-\item{ComboSerObj}{A Seurat object containing single-cell RNA-seq data.}
+\item{SerObj}{A Seurat object containing single-cell RNA-seq data.}
 
 \item{labelColumn}{A string specifying the name of the column in the metadata of
 the Seurat object that defines the groups (e.g., cell types or conditions) for

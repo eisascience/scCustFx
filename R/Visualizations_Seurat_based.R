@@ -187,6 +187,7 @@ plot_violin_wpvalue <- function(SerObj,
 #'
 #' @param SerObj A Seurat object.
 #' @param reduction The dimensionality reduction method used in Seurat (default is "pca").
+#' @param loadingsLS Give a list of loadings to use instead of Seurat object SDA reduction.
 #' @param dimN the reduction dim default = 1 
 #' @param highlight_genes A character vector of gene symbols to highlight in the plot (default is NULL).
 #' @param TopNpos The number of top positive loadings to display (default is 10).
@@ -199,6 +200,7 @@ plot_violin_wpvalue <- function(SerObj,
 #' @return A ggplot object representing the loadings along genomic coordinates.
 #' @export
 plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
+                                      loadingsLS = NULL,
                                       highlight_genes = NULL, 
                                       TopNpos = 10, TopNneg=10,
                                       data_set = "hsapiens_gene_ensembl", #mmulatta_gene_ensembl
@@ -298,8 +300,11 @@ plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
   temp$genomic_position <- temp$start_position + temp$length / 2
   
   # component = Seurat::Loadings(SerObj, reduction = reduction)[, paste0(redLab, "_", dimN)]
-  component = Seurat::Loadings(SerObj, reduction = reduction)[, dimN]
+  if(is.null(loadingsLS)) component = Seurat::Loadings(SerObj, reduction = reduction)[, dimN]
   
+  if(!is.null(loadingsLS)) {
+    component = loadingsLS[[reduction]]$loadings[dimN,]
+  }
   if(invertWeights){
     component = component * -1
   }
