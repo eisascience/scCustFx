@@ -386,7 +386,7 @@ ImputeSDA2SerV3 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", p
       print(genes_overlap)
     }
     
-    sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[KC, genes_overlap] %*% SerObj@assays$RNA@data[genes_overlap, ]))
+    sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[KC, genes_overlap] %*% SerObj@assays$RNA$data[genes_overlap, ]))
     colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", KC, MetaExtraName)
     
 
@@ -426,7 +426,7 @@ ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", p
   
   if(is.null(keepComps)) keepComps = 1:nrow(sda_loadings)
   
-  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA@data[genes_overlap, ]))
+  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA$data[genes_overlap, ]))
   colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
   
   if(doAsinh) {
@@ -485,7 +485,7 @@ ImputeSDA2Ser <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plo
   
   if(is.null(keepComps))keepComps = 1:nrow(sda_loadings)
   
-  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA@data[genes_overlap, ]))
+  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA$data[genes_overlap, ]))
   colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
 
   if(doAsinh) {
@@ -557,10 +557,12 @@ SDAScoreMeta2Reduction <- function(SerObj,
                                    sdaComps = NULL, reduction.key = 'SDA_' , 
                                    assayName = "RNA", reduction.name = "SDA", includeLoading = F){
   
-  embeddings <- Matrix::as.matrix(SerObj@meta.data[,sdaComps] )
-  projected <- Matrix::as.matrix(loadingMat)
+  embeddings <- Matrix::as.matrix(ComboSerObj@meta.data[,sdaComps] )
+  projected <- Matrix::as.matrix(loadingMat[,sdaComps])
   
   colnames(projected) <- paste0(reduction.key, 1:ncol(projected))
+  colnames(embeddings) <-  colnames(projected)
+  
   
   if(includeLoading) {
     sda.reduction <- Seurat::CreateDimReducObject(embeddings = embeddings, 

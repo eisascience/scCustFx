@@ -600,7 +600,7 @@ plot3d_seurat <- function(SerObj,
   
   # Check if feature1 is a gene name or metadata name
   # if (feature1 %in% rownames(SerObj@assays$RNA@scale.data)) {
-  #   x <- SerObj@assays$RNA@data[feature1, ]
+  #   x <- SerObj@assays$RNA$data[feature1, ]
   # } else if (feature1 %in% colnames(SerObj@meta.data)) {
   #   x <- SerObj@meta.data[, feature1]
   # } else {
@@ -610,7 +610,7 @@ plot3d_seurat <- function(SerObj,
   
   # Check if feature2 is a gene name or metadata name
   # if (feature2 %in% rownames(SerObj@assays$RNA@scale.data)) {
-  #   y <- SerObj@assays$RNA@data[feature2, ]
+  #   y <- SerObj@assays$RNA$data[feature2, ]
   # } else if (feature2 %in% colnames(SerObj@meta.data)) {
   #   y <- SerObj@meta.data[, feature2]
   # } else {
@@ -620,7 +620,7 @@ plot3d_seurat <- function(SerObj,
   
   # Check if feature3 is a gene name or metadata name
   # if (feature3 %in% rownames(SerObj@assays$RNA@scale.data)) {
-  #   z <- SerObj@assays$RNA@data[feature3, ]
+  #   z <- SerObj@assays$RNA$data[feature3, ]
   # } else if (feature3 %in% colnames(SerObj@meta.data)) {
   #   z <- SerObj@meta.data[, feature3]
   # } else {
@@ -851,7 +851,7 @@ PlotExprThrTab <- function(SerObj, GeneName = NULL, CutThresh = NULL, PlotBar = 
   if(length(GeneName) != 1) stop ("GeneName Length != 1")
   
   
-  # tempTab <- table(SerObj@assays$RNA@data[GeneName, ]>CutThresh, SerObj@meta.data[,MetaDataName])
+  # tempTab <- table(SerObj@assays$RNA$data[GeneName, ]>CutThresh, SerObj@meta.data[,MetaDataName])
   tempTab <- table(GetAssayData(object = SerObj, slot = 'data')[GeneName, ]>CutThresh, 
                    SerObj@meta.data[,MetaDataName])
   
@@ -873,7 +873,7 @@ PlotExprThrTab <- function(SerObj, GeneName = NULL, CutThresh = NULL, PlotBar = 
     
   } else {
     
-    tempDF  <- as.data.frame(cbind(Expr = SerObj@assays$RNA@data[GeneName, ], CellN = colnames(SerObj@assays$RNA@data)), stringsAsFactors = F)
+    tempDF  <- as.data.frame(cbind(Expr = SerObj@assays$RNA$data[GeneName, ], CellN = colnames(SerObj@assays$RNA$data)), stringsAsFactors = F)
     tempDF$Expr <- as.numeric(tempDF$Expr)
     
     vp <- VlnPlot(SerObj, features = GeneName, group.by = MetaDataName, cols = col_vector) + theme(legend.position = "none") +
