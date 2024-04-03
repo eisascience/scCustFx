@@ -11,7 +11,8 @@ ImputeSDA2SerV2(
   sdaObjID = "",
   plot = F,
   doAsinh = T,
-  MakeReduc = T
+  MakeReduc = T,
+  assay = "RNA"
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ ImputeSDA2SerV2(
 \item{sdaObjID}{id name to apped to comp names}
 
 \item{plot}{to plot or not}
+
+\item{assay}{Default "RNA" can be "SCT", etc}
 }
 \value{
 seurat obj with new SDA score comps in metadata

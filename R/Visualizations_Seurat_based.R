@@ -199,7 +199,7 @@ plot_violin_wpvalue <- function(SerObj,
 #' 
 #' @return A ggplot object representing the loadings along genomic coordinates.
 #' @export
-plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
+plot_loadings_coordinates.seurat <- function(SerObj, reduction = "pca", redLab = "PC",
                                       loadingsLS = NULL,
                                       highlight_genes = NULL, 
                                       TopNpos = 10, TopNneg=10,
@@ -211,7 +211,7 @@ plot_loadings_coordinates <- function(SerObj, reduction = "pca", redLab = "PC",
   library(ggrepel)
   
   # Use the Ensembl Mart for human genes
-  mart <- useMart("ensembl", "hsapiens_gene_ensembl")
+  mart <- useMart("ensembl", data_set)
   
   # Get gene coordinates
   genes <- getBM(attributes = c("chromosome_name", "start_position", "end_position"), mart = mart)
@@ -1046,5 +1046,64 @@ plot_libSize <- function(SerObj, assay="ADT", slot = "counts",
     scale_fill_manual(values=col_vector)
   
 }
-                               
+
+
+      
+#' Plot Top Expressed Genes
+#'
+#' This function plots the percentage of total counts per cell for the most expressed genes
+#' in a given SingleCellExperiment object or a similar object containing gene expression data.
+#' It uses ggplot2 for plotting, providing a more customizable and visually appealing output
+#' compared to base R graphics. The genes are ordered by their expression levels, and only the
+#' specified number of top expressed genes are displayed.
+#'
+#' @param SerObj A SingleCellExperiment object or a similar object that contains
+#' gene expression data. The function expects this object to have a count matrix
+#' accessible via `GetAssayData(SerObj, layer = "counts")`.
+#' @param showGenes An integer specifying the number of top expressed genes to display.
+#' Defaults to 20.
+#' @param title A character string representing the plot title. Optional.
+#'
+#' @return A ggplot object representing the boxplot of the specified number of top expressed genes.
+#' This object can be further modified or directly displayed using ggplot2 functions.
+#'
+#' @examples
+#' # Assuming 'SerObj' is your SingleCellExperiment object:
+#' TopGenes_Boxplot_ggplot(SerObj, showGenes = 20, title = "Top 20 Expressed Genes")
+#'
+#' @export
+TopGenes_Boxplot <- function(SerObj, showGenes = 20, title = "") {
+  # Extract count data
+  C <- GetAssayData(SerObj, layer = "counts")
+  
+  # Normalize counts to percentage of total counts per cell
+  # C <- C / rep.int(colSums(C), diff(C@p))
+  C@x = C@x/rep.int(Matrix::colSums(C), diff(C@p))
+  
+  # Identify the most expressed genes
+  most_expressed <- order(Matrix::rowSums(C), decreasing = TRUE)[1:showGenes]
+  
+  # Convert to a regular matrix and subset the most expressed genes
+  C_sub <- as.matrix(C[most_expressed, ])
+  
+  # Create a data frame suitable for ggplot
+  df <- data.frame(gene = rep(rownames(C_sub), each = ncol(C_sub)),
+                   cell = rep(colnames(C_sub), nrow(C_sub)),
+                   expression = as.vector(t(C_sub)))
+  
+  # Plotting
+  gg = ggplot(df, aes(x = factor(gene, levels = rownames(C_sub)), 
+                      y = expression, fill = gene)) +
+    geom_boxplot(outlier.size = .8, outlier.alpha = .8) +
+    scale_fill_hue() + # Use a discrete viridis color scale for better visuals
+    labs(title = title, x = "Ordered Genes", y = "% Total Count per Cell") +
+    theme_classic() +
+    theme(legend.position="none",
+          legend.direction="horizontal",
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1)) # Improve x-axis label readability
+  return(gg)
+}     
+
+
                                

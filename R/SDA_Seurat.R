@@ -418,15 +418,22 @@ ImputeSDA2SerV3 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", p
 #' @param keepComps if NULL all else numeric or char vec
 #' @param sdaObjID id name to apped to comp names
 #' @param plot to plot or not 
+#' @param assay Default "RNA" can be "SCT", etc 
 #' @return seurat obj with new SDA score comps in metadata
 #' @export
-ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", plot=F, doAsinh = T, MakeReduc=T){
+ImputeSDA2SerV2 <- function(SerObj, sda_loadings, keepComps=NULL, sdaObjID="", 
+                            plot=F, doAsinh = T, MakeReduc=T, assay = "RNA"){
   
   genes_overlap = intersect(rownames(SerObj), colnames(sda_loadings))
   
   if(is.null(keepComps)) keepComps = 1:nrow(sda_loadings)
   
-  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays$RNA$data[genes_overlap, ]))
+  if(!assay %in% names(SerObj@assays)){
+    print(paste0("Available Assays: ", paste0(names(SerObj@assays), collapse = ", ") )  )
+    stop("Assay not in object ")
+  }
+  
+  sda_scores = Matrix::as.matrix(Matrix::t(sda_loadings[keepComps, genes_overlap] %*% SerObj@assays[[assay]]$data[genes_overlap, ]))
   colnames(sda_scores) = paste0("sda.", sdaObjID, ".V", keepComps)
   
   if(doAsinh) {

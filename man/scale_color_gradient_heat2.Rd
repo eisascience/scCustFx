@@ -5,7 +5,7 @@
 \alias{scale_color_gradient_heat2}
 \title{scale_color_gradient_heat2}
 \format{
-An object of class \code{ScaleContinuous} (inherits from \code{Scale}, \code{ggproto}, \code{gg}) of length 19.
+An object of class \code{ScaleContinuous} (inherits from \code{Scale}, \code{ggproto}, \code{gg}) of length 18.
 }
 \usage{
 scale_color_gradient_heat2
