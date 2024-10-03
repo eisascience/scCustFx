@@ -149,7 +149,7 @@ plot_violin_wpvalue <- function(SerObj,
     if(doJitter){
       ggviolin(v1, x = "Grp", y = "Feat", 
                fill = "Grp",
-               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               palette=colors[1:length(levels(factor(v1$Grp)))],
                add = "jitter",
                add.params = list(size = .005, alpha = 0.05),
                title = paste0("Wilcox p.value. :: ", title)) + 
@@ -157,7 +157,7 @@ plot_violin_wpvalue <- function(SerObj,
                            label = "p.signif")
     } else {
       ggviolin(v1, x = "Grp", y = "Feat", fill = "Grp",
-               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               palette=colors[1:length(levels(factor(v1$Grp)))],
                title = paste0("Wilcox p.value. :: ", title)) + 
         stat_compare_means(comparisons = comparisons , label = "p.signif")
     }
@@ -167,12 +167,12 @@ plot_violin_wpvalue <- function(SerObj,
       
       ggviolin(v1, x = "Grp", y = "Feat", 
                fill = "Grp",
-               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               palette=colors[1:length(levels(factor(v1$Grp)))],
                add = "jitter",
                title = paste0("Wilcox p.value. :: ", title)) 
     } else {
       ggviolin(v1, x = "Grp", y = "Feat", fill = "Grp",
-               palette=col_vector[1:length(levels(factor(v1$Grp)))],
+               palette=colors[1:length(levels(factor(v1$Grp)))],
                title = paste0("Wilcox p.value. :: ", title)) 
     }
   }
@@ -260,10 +260,11 @@ plot_loadings_coordinates.seurat <- function(SerObj, reduction = "pca", redLab =
     # } 
   }
   
-  
-  gene_locations[is.na(gene_locations$start_position), ]$chromosome_name = "?"
-  gene_locations[is.na(gene_locations$start_position), ]$start_position = 1
-  
+  if(sum(is.na(gene_locations$start_position))>0) {
+    gene_locations[is.na(gene_locations$start_position), ]$chromosome_name = "?"
+    gene_locations[is.na(gene_locations$start_position), ]$start_position = 1
+  }
+    
   if(includeUnMapped){
     if(sum(grepl("^LOC", Genes2Map)) > 0){
       LOCgenes = Genes2Map[grepl("^LOC", Genes2Map)]
@@ -318,15 +319,17 @@ plot_loadings_coordinates.seurat <- function(SerObj, reduction = "pca", redLab =
   # Merge with genomic positions
   label_data <- merge(label_data, temp, by = "gene_symbol", all.x = TRUE)
   
- 
-  label_data[is.na(label_data$start_position), ]$chromosome_name = "?"
-  label_data[is.na(label_data$start_position), ]$length = 3
-  if(includeUnMapped) label_data[is.na(label_data$start_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
-  label_data[is.na(label_data$start_position), ]$start_position = 1
+  if(sum(is.na(label_data$start_position))>0) {
+    
+    label_data[is.na(label_data$start_position), ]$chromosome_name = "?"
+    label_data[is.na(label_data$start_position), ]$length = 3
   
-  label_data[is.na(label_data$length), ]$length = 3
-  if(includeUnMapped) label_data[is.na(label_data$genomic_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+      if(includeUnMapped) label_data[is.na(label_data$start_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+      label_data[is.na(label_data$start_position), ]$start_position = 1
   
+      label_data[is.na(label_data$length), ]$length = 3
+      if(includeUnMapped) label_data[is.na(label_data$genomic_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+  }
   
   label_data$gene_symbol_show = ""
   label_data$gene_symbol_show[order(label_data$loading, decreasing = TRUE)[1:TopNpos]] = label_data$gene_symbol[order(label_data$loading, decreasing = TRUE)[1:TopNpos]] 

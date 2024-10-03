@@ -39,7 +39,7 @@ ColorTheme <- function(){
 #' @return A vector of colors.
 #' @export
 Cold2Hot <- function(plotDemo = F){
-  library(wesanderson)
+  library(wesanderson) #devtools::install_github("karthik/wesanderson")
   
   Rbrew10_Spec = RColorBrewer::brewer.pal(10, "Spectral")
   Wes10_Ziss = as.character(wes_palette("Zissou1", 10, type = "continuous"))

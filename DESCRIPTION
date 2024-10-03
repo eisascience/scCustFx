@@ -9,7 +9,7 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.3.0)
+    R (>= 4.2.0)
 Imports:
     data.table,
     dplyr,
@@ -21,10 +21,7 @@ Imports:
     knitr,
     RColorBrewer,
     stringr,
-    ggbeeswarm,
-    wesanderson,
     tidyr,
-    ggfortify
 Suggests:
     Seurat,
     SeuratDisk,
@@ -48,12 +45,15 @@ Suggests:
     ggrastr,
     rmdformats,
     igraph,
+    ggfortify,
     circlize,
     Hmisc,
+    ggbeeswarm,
+    wesanderson,
     testthat (>= 2.1.0)
 Remotes:
     mojaveazure/seurat-disk,
     VPetukhov/ggrastr,
     juba/rmdformats,
     karthik/wesanderson
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

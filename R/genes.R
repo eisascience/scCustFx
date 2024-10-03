@@ -1,3 +1,36 @@
+
+#' Get.Gene_Info
+#'
+#' This function get gene info via biomaRt
+#'
+#' @param gene_names  gene set
+#' @param dataset  default hsapiens_gene_ensembl, try mmusculus_gene_ensembl
+#' @param attributes attributes to grab
+#' @return converted human gene set
+#' @export
+Get.Gene_Info <- function(gene_names,
+                          dataset = "hsapiens_gene_ensembl",
+                          attributes = c("external_gene_name", "chromosome_name", 
+                                         "start_position", "end_position", "description")) {
+  library(biomaRt)
+  # Connect to the Ensembl database
+  ensembl <- useEnsembl(biomart = "genes", dataset = dataset)
+  
+  # Define the attributes we want to retrieve
+  
+  
+  # Retrieve the information for the given gene names
+  results <- getBM(attributes = attributes, 
+                   filters = "external_gene_name", 
+                   values = gene_names, 
+                   mart = ensembl)
+  
+  # Return the results as a dataframe
+  return(results)
+}
+
+
+
 #' convert.Mouse2Human.biomaRt
 #'
 #' This function converts mouse genes to human genes via biomaRt

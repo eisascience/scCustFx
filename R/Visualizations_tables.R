@@ -64,13 +64,13 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
   }
 }
 
-#' gg_barplot_table, aka OOSAP::PlotMyTable
+#' gg_barplot_2waytable, aka OOSAP::PlotMyTable
 #'
 #' Takes a table and plots a gg barplot 
 #' @param MyTable A 2way table (base R table()) 
 #' @param Title A title else ""
-#' @param legend.position legend position defautl "bottom"
-#' @param PlotCombo if T plots % and count plots together
+#' @param legend.position legend position default "bottom"
+#' @param PlotCombo if T plots and count plots together
 #' @param xlab x axis label
 #' @param xtext_angle x axis label
 #' @param hjust if angle is 90 set to 1 
@@ -80,6 +80,7 @@ heatmap_table <- function(TBL, clust.meth="ward.D2", clust.dist="euclidean", Tit
 #' @param theme a ggplot theme, default theme_bw(base_size = base_size)
 #' @param base_size numerical
 #' @return A ggplot 
+#' 
 #' @export
 gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", PlotCombo = F, xlab="", 
                                 xtext_angle = 45, hjust = 0.9,vjust = 0.8,base_size = 10,
@@ -136,6 +137,7 @@ gg_barplot_2waytable = function(MyTable, Title="", legend.position="bottom", Plo
 #' @param Title A title else ""
 #' @param gg_theme a ggplot theme or NULL
 #' @return A ggplot 
+#' 
 #' @export
 gg_barplot_table <- function(TBL, Title = "", gg_theme=NULL){
   
@@ -165,3 +167,58 @@ gg_barplot_table <- function(TBL, Title = "", gg_theme=NULL){
 
 
 
+#' gg_barplot_table2
+#'
+#' Takes a table and plots a gg barplot 
+#' @param TBL A table (base R table()) 
+#' @param Title A title or NULL
+#' @param gg_theme a ggplot theme or NULL
+#' @param col_vector a vector of colors or NULL
+#' @return A ggplot 
+#' @export
+gg_barplot_table2 <- function(TBL, Title = NULL, gg_theme=NULL, col_vector=NULL){
+  
+  tbl.m = reshape2::melt(TBL)
+  
+  if("Var1" %in% colnames(tbl.m)) {
+    if(class(tbl.m$Var1)=="integer") tbl.m$Var1 = as.character(tbl.m$Var1)
+    if("Var2" %in% colnames(tbl.m)) {
+      
+      ggp = ggplot(tbl.m, aes(x=Var1, y=value, fill=Var2)) 
+      
+    } else {
+      ggp = ggplot(tbl.m, aes(x=Var1, y=value)) 
+    }
+    
+  }
+  
+  if("variable" %in% colnames(tbl.m)) {
+    if(class(tbl.m$variable)=="integer") tbl.m$variable = as.character(tbl.m$variable)
+    ggp = ggplot(tbl.m, aes(x=variable, y=value)) 
+  }
+  
+  if(!is.null(gg_theme)){
+    ggp = ggp + gg_theme()
+  } else {
+    ggp = ggp + ggplot2::theme_bw()
+  }
+  
+  if(!is.null(col_vector)){
+    ggp = ggp +  scale_fill_manual(values=col_vector) 
+  }
+  
+  if(!is.null(Title)){
+    ggp = ggp + ggplot2::ggtitle(Title)
+  }
+  
+  ggp = ggp + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1)) 
+  
+  
+  ggp   +
+    ggplot2::geom_bar(stat="identity")
+  
+  ggp   +
+    ggplot2::geom_bar(stat="identity", width = 0.7, position="fill") 
+  
+  
+}

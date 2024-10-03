@@ -127,11 +127,14 @@ plot_loadings_coordinates <- function(SDARedDataLS,
   # Merge with genomic positions
   label_data <- merge(label_data, temp, by = "gene_symbol", all.x = TRUE)
   
-  
-  label_data[is.na(label_data$start_position), ]$chromosome_name = "?"
-  label_data[is.na(label_data$start_position), ]$length = 3
-  if(includeUnMapped & sum(is.na(label_data$start_position))>0) label_data[is.na(label_data$start_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
-  label_data[is.na(label_data$start_position), ]$start_position = 1
+  if(sum(is.na(label_data$start_position))>0) {
+    
+    label_data[is.na(label_data$start_position), ]$chromosome_name = "?"
+    label_data[is.na(label_data$start_position), ]$length = 3
+      
+    if(includeUnMapped & sum(is.na(label_data$start_position))>0) label_data[is.na(label_data$start_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
+    label_data[is.na(label_data$start_position), ]$start_position = 1
+  }
   
   if(sum(is.na(label_data$length))>0) label_data[is.na(label_data$length), ]$length = 3
   if(includeUnMapped & sum(is.na(label_data$genomic_position))>0) label_data[is.na(label_data$genomic_position), ]$genomic_position = max(label_data$genomic_position, na.rm = T) + 2
@@ -165,4 +168,38 @@ plot_loadings_coordinates <- function(SDARedDataLS,
   }
   
   return(P)
+}
+
+
+#' This function generates a Heatmap of thresholding SDA score
+#'
+#' @param SDAscore vector of SDA score
+#' @param Meta a meta vector or NULL 
+#' @param GT if T greater than 
+#' @param CutThresh Cut the score based on threshold .
+#' 
+#' 
+#' @return A ggplot object representing the loadings along genomic coordinates.
+#' @export
+HeatMap_SDAScore_Thr <- function(SDAscore, Meta = NULL,  GT = T, CutThresh = 0, clustering_method = "ward.D2"){
+  
+  if(is.null(Meta)) Meta = rep(0, length(SDAscore))
+  
+  tempDF = data.frame(SDAscore = SDAscore, 
+                      Meta = Meta)
+  
+  
+  
+  
+  tempDF$GtThr = "BelowThreshold"
+  
+  
+  if(GT) tempDF$GtThr[tempDF[,"SDAscore"]>=CutThresh] = "AboveThreshold"
+  if(!GT) tempDF$GtThr[tempDF[,"SDAscore"]<CutThresh] = "AboveThreshold"
+  
+  
+  pheatmap::pheatmap(asinh(chisq.test(table(tempDF$Meta, tempDF$GtThr))$res), clustering_method = clustering_method)
+  
+  
+  
 }

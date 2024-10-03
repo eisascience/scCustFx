@@ -388,5 +388,170 @@ plot2Dredux <- function(plotDF, centers = 8, NfeatPerClus = 10, returnDF = F, ti
 
 
 
-
+#' Create an UpSet plot from a list of sets
+#'
+#' This function generates an UpSet plot from a list of sets and saves it as an image.
+#'
+#' @param set_list A list of sets to visualize.
+#' @param output_filename The filename for the output image.
+#' @param image_format The format in which to save the image (default: "svg").
+#' @param do.sqr Should the y-axis of the main plot and overlap plot be square-root transformed? (default: TRUE)
+#'
+#' @return A ggplot2 UpSet plot.
+#'
+#' @import ggplot2
+#' @import scales
+#' @import gtable
+#' @import dplyr
+#' @import tidyr
+#' @import stringr
+#' @import grid
+#' @import cowplot
+#' @import RColorBrewer
+#' @import ComplexHeatmap
+#' @examples
+#' # Example usage:
+#' create_upset_plot(list("A" = c("1", "2", "3"), "B" = c("2", "3", "4")), "upset_plot.svg")
+#'
+#'
+#' @export
+create_upset_plot <- function(set_list, 
+                              output_filename = NULL, 
+                              image_format = "png", do.sqr =T,
+                              plot.nrow = 2,
+                              plot.ncol = 2,
+                              plot.heights = c(1, 2),
+                              plot.widths = c(1, 0.8),
+                              save.height = 3.5, save.width = 3) {
+  library(ComplexHeatmap)
+  library(dplyr)
+  library(ggplot2)
+  library(RColorBrewer)
+  library(stringr)
+  library(tidyr)
+  
+  # Create a matrix from the list of sets
+  comb_mat <- make_comb_mat(set_list)
+  
+  # Get set names
+  my_names <- set_name(comb_mat)
+  
+  # Total set size
+  my_set_sizes <- set_size(comb_mat) %>%
+    as.data.frame() %>%
+    rename(sizes = ".") %>%
+    mutate(Set = row.names(.))
+  
+  total_size <- sum(my_set_sizes$sizes)
+  my_set_sizes$percentage <- paste0(my_set_sizes$sizes, " (", scales::percent(my_set_sizes$sizes / total_size), ")")
+  
+  
+  p1 <-  my_set_sizes %>%
+    mutate(Set = reorder(Set, sizes)) %>%
+    ggplot(aes(x = Set, y = sizes)) +
+    geom_bar(stat = "identity", aes(fill = Set), alpha = 0.8, width = 0.7) +
+    geom_text(aes(label = percentage), size = 5, angle = 90, hjust = 0, y = 1) +
+    scale_fill_manual(values = brewer.pal(4, "Set2"), limits = my_names) +
+    labs(x = NULL, y = "Set size", fill = NULL) +
+    theme_classic() +
+    theme(legend.position = "right", text = element_text(size = 14),
+          axis.ticks.y = element_blank(), axis.text = element_blank())
+  
+  if(do.sqr) p1 = p1 + scale_y_continuous(trans = "sqrt") +
+    labs(x = NULL, y = "sqrt(Set size)", fill = NULL)
+  
+  # Legend
+  get_legend <- function(p) {
+    tmp <- ggplot_gtable(ggplot_build(p))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    legend
+  }
+  
+  p2 <- get_legend(p1)
+  
+  # # Overlap sizes
+  my_overlap_sizes <- comb_size(comb_mat) %>%
+    as.data.frame() %>%
+    rename(overlap_sizes = ".") %>%
+    mutate(category = row.names(.))
+  
+  # p3 <- my_overlap_sizes %>%
+  #   mutate(category = reorder(category, -overlap_sizes)) %>%
+  #   ggplot(aes(x = category, y = overlap_sizes)) +
+  #   geom_bar(stat = "identity", fill = "grey80", color = NA, alpha = 0.8, width = 0.7) +
+  #   geom_text(aes(label = overlap_sizes, y = 0), size = 5, hjust = 0, vjust = 0.5, angle = 90) +
+  #   labs(y = "Intersect size", x = NULL) +
+  #   theme_classic() +
+  #   theme(text = element_text(size = 14, color = "black"),
+  #         axis.text = element_blank(),
+  #         axis.ticks.x = element_blank(),
+  #         axis.title.x = element_text(hjust = 0))
+  
+  # Calculate the percentages
+  my_overlap_sizes <- my_overlap_sizes %>%
+    mutate(overlap_sizes_percentage = (overlap_sizes / sum(overlap_sizes)) * 100)
+  
+  # Create the ggplot barplot with percentages
+  p3 <- my_overlap_sizes %>%
+    mutate(category = reorder(category, -overlap_sizes_percentage)) %>%
+    ggplot(aes(x = category, y = overlap_sizes_percentage)) +
+    geom_bar(stat = "identity", fill = "grey80", color = NA, alpha = 0.8, width = 0.7) +
+    # geom_text(aes(label = paste(round(overlap_sizes_percentage, 1), "%")), size = 5, hjust = 0, vjust = 0.5, angle = 90) +
+    geom_text(aes(label = paste(round(overlap_sizes_percentage, 1), "%")), 
+              size = 5, angle = 90, hjust = 0, y = 1) +
+    labs(y = "Intersect size (%)", x = NULL) +
+    theme_classic() +
+    theme(text = element_text(size = 14, color = "black"),
+          axis.text = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_text(hjust = 0))
+  
+  if(do.sqr) p3 = p3 + scale_y_continuous(trans = "sqrt") +
+    labs(x = NULL, y = "sqrt(Intersect size)", fill = NULL)
+  
+  p3 = p3 + scale_x_discrete(limits = rev(levels(p3$data$category)))
+  
+  # Overlap matrix
+  my_overlap_matrix <- str_split(string = my_overlap_sizes$category, pattern = "", simplify = T) %>%
+    as.data.frame()
+  
+  colnames(my_overlap_matrix) <- my_names
+  
+  my_overlap_matrix_tidy <- my_overlap_matrix %>%
+    cbind(category = my_overlap_sizes$category) %>%
+    pivot_longer(cols = !category, names_to = "Set", values_to = "value") %>%
+    full_join(my_overlap_sizes, by = "category") %>%
+    full_join(my_set_sizes, by = "Set")
+  
+  p4 <- my_overlap_matrix_tidy %>%
+    mutate(category = reorder(category, -overlap_sizes)) %>%
+    mutate(Set = reorder(Set, sizes)) %>%
+    ggplot(aes(x = Set, y = category)) +
+    geom_tile(aes(fill = Set, alpha = value), color = "grey30", linewidth = 1) +
+    scale_fill_manual(values = brewer.pal(4, "Set2"), limits = my_names) +
+    scale_alpha_manual(values = c(0.8, 0), limits = c("1", "0")) +
+    labs(x = "Sets", y = "Overlap") +
+    theme_minimal() +
+    theme(legend.position = "none", text = element_text(color = "black", size = 14),
+          panel.grid = element_blank(), axis.text = element_blank())
+  
+  # Put them together
+  upset_plot <- wrap_plots(p1, p2, p4, p3,
+                           nrow = plot.nrow,
+                           ncol = plot.ncol,
+                           heights = plot.heights,
+                           widths = plot.widths,
+                           guides = "collect") &
+    theme(legend.position = "none")
+  
+  
+  print(upset_plot)
+  
+  # Save the plot as an image
+  if(!is.null(output_filename)) ggsave(output_filename, 
+                                       plot = upset_plot, 
+                                       height = save.height, width = save.width, bg = "white", 
+                                       device = image_format)
+}
 

@@ -2202,3 +2202,604 @@ updateClusterLabels <- function(SerObj, columnName, sortedColumnName=NULL) {
 }
 
 
+
+
+
+#' RunKBET
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param reduction Reduction to use.
+#' @param dims Number of dimensions to use.
+#' @param per Percentages of the mean batch size.
+#' @param acceptance Return the acceptance rate.
+#' @param verbose Print verbose.
+#'
+#' @return kBET mean score.
+#' @export
+RunKBET <- function(SerObj = NULL, batch = "batch", reduction = "pca", dims = 10, per = 0.1, acceptance = TRUE, verbose = FALSE){
+  
+  md <- SerObj[[]]
+  if(!(reduction %in% Seurat::Reductions(SerObj)))
+    stop(paste0(reduction, " not found in the SerObj's reductions."))
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, " not found in the SerObj's meta data."))
+  
+  data <- as.data.frame(Seurat::Embeddings(SerObj = SerObj, reduction = reduction)[,1:dims])
+  meanBatch <- mean(table(md[[batch]]))
+  
+  scores <- lapply(per, function(p){
+    k0 = floor(p*(meanBatch))
+    score <- mean(kBET::kBET(df = data, batch = md[[batch]], do.pca = FALSE,
+                             heuristic = FALSE, k0 = k0,
+                             plot = FALSE)$stats$kBET.observed)
+    return(score)
+  })
+  
+  scores <- unlist(scores)
+  scores <- mean(scores)
+  
+  if(acceptance)
+    scores <- 1-scores
+  
+  return(scores)
+}
+
+
+
+#' RunSilhouette
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param reduction Reduction to use.
+#' @param dims Number of dimensions to use.
+#'
+#' @return Silhouette width score.
+#' @export
+RunSilhouette <- function(SerObj = NULL, batch = "celltype", reduction = "pca", dims = 10){
+  
+  md <- SerObj[[]]
+  
+  if(!(reduction %in% Seurat::Reductions(SerObj)))
+    stop(paste0(reduction, " not found in the SerObj's reductions."))
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, " not found in the meta data."))
+  
+  batch <- factor(md[[batch]])
+  
+  pcaData <- as.matrix(Seurat::Embeddings(SerObj = SerObj, reduction = reduction)[,1:dims])
+  pcaData <- list(x = pcaData)
+  
+  score <- kBET::batch_sil(pca.data = pcaData, batch = batch, nPCs = dims)
+  
+  return(score)
+}
+
+
+
+
+
+
+
+
+#' RunComBatseq
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Corrected and normalized Seurat SerObj.
+#' @export
+RunComBatseq <- function(SerObj = NULL, batch = "batch", runningTime = FALSE, verbose = FALSE, ...){
+  
+  features <- Seurat::VariableFeatures(SerObj)
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  counts <- as.matrix(Seurat::GetAssayData(SerObj, assay = "RNA", slot = "counts")[features,])
+  md <- SerObj[[]]
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch label."))
+  
+  time <- system.time({
+    corrCounts <- sva::ComBat_seq(counts = counts, batch = md[[batch]], full_mod = FALSE)
+  })
+  
+  SerObj[["integrated"]] <- Seurat::CreateAssaySerObj(counts = corrCounts)
+  Seurat::DefaultAssay(SerObj) <- "integrated"
+  
+  SerObj <- Seurat::NormalizeData(SerObj = SerObj, assay = "integrated", verbose = verbose, ...)
+  Seurat::VariableFeatures(SerObj) <- features
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunScMerge
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param ks A vector indicates the kmeans's K for each batch, which length needs to be the same as the number of batches.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Corrected Seurat SerObj.
+#' @export
+RunScMerge <- function(SerObj = NULL, batch = "batch", ks = NULL, runningTime = FALSE, verbose = FALSE, ...){
+  
+  features <- Seurat::VariableFeatures(SerObj)
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  data <- as.matrix(Seurat::GetAssayData(SerObj, assay = "RNA", slot = "data"))
+  md <- SerObj[[]]
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch label."))
+  
+  if(is.null(ks)){
+    nBatches <- length(unique(md[,batch]))
+    ks <- rep(5, nBatches)
+  }
+  
+  tmp <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = data, logcounts = data), colData = md)
+  seg = scMerge::scSEGIndex(exprs_mat = data)
+  
+  time <- system.time({
+    tmp <- scMerge::scMerge(sce_combine = tmp, ctl = rownames(seg), assay_name = "scMerge",
+                            kmeansK = ks, batch_name = batch, plot_igraph = FALSE, verbose = FALSE, ...)
+  })
+  
+  # Seurat assay
+  corrData <- as.matrix(SummarizedExperiment::assay(tmp, "scMerge"))
+  SerObj[["integrated"]] <- Seurat::CreateAssaySerObj(counts = corrData)
+  Seurat::DefaultAssay(SerObj) <- "integrated"
+  Seurat::VariableFeatures(SerObj) <- features
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunMNN
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Seurat SerObj with the corrected data in the 'integrated' assay.
+#' @export
+RunMNN <- function(SerObj = NULL, batch = "batch", runningTime = FALSE, verbose = FALSE, ...){
+  
+  features <- Seurat::VariableFeatures(SerObj)
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  data <- as.matrix(Seurat::GetAssayData(SerObj, assay = "RNA", slot = "data")[features,])
+  md <- SerObj[[]]
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch labels."))
+  
+  time <- system.time({
+    corrData <- batchelor::mnnCorrect(data, batch = md[[batch]], ...)
+  })
+  
+  corrData <- SummarizedExperiment::assay(corrData, "corrected")
+  SerObj[["integrated"]] <- Seurat::CreateAssaySerObj(counts = corrData)
+  Seurat::DefaultAssay(SerObj) <- "integrated"
+  Seurat::VariableFeatures(SerObj) <- features
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunScanorama
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Seurat SerObj with the corrected data in the 'integrated' assay.
+#' @export
+RunScanorama <- function(SerObj = NULL, batch = "batch", runningTime = FALSE, verbose = FALSE, ...){
+  
+  Scanorama <- reticulate::import("scanorama")
+  datal <- list()
+  genel <- list()
+  features <- Seurat::VariableFeatures(SerObj)
+  
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  if(!(batch %in% colnames(SerObj[[]])))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch labels."))
+  
+  SerObjl <- Seurat::SplitSerObj(SerObj, split.by = batch)
+  
+  for(i in seq_len(length(SerObjl))){
+    datal[[i]] <- Seurat::GetAssayData(SerObjl[[i]], assay = "RNA", slot = "data")[features,] # Normalized counts
+    datal[[i]] <- as.matrix(datal[[i]])
+    datal[[i]] <- t(datal[[i]]) # Cell x genes
+    
+    genel[[i]] <- features
+  }
+  
+  time <- system.time({
+    corrDatal <- Scanorama$correct(datasets_full = datal, genes_list = genel, return_dense = TRUE)
+  })
+  
+  corrData <- Reduce(rbind, corrDatal[[1]])
+  corrData <- t(corrData)
+  rownames(corrData) <- corrDatal[[2]]
+  colnames(corrData) <- unlist(sapply(SerObjl,colnames))
+  
+  # Same cell names as the original SerObj
+  corrData <- corrData[,colnames(SerObj)]
+  
+  ## Create Seurat assay
+  SerObj[["integrated"]] <- Seurat::CreateAssaySerObj(counts = corrData)
+  Seurat::DefaultAssay(SerObj) <- "integrated"
+  Seurat::VariableFeatures(SerObj) <- features
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunLiger
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param k Inner dimension of factorization (number of factors)
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Seurat SerObj with the corrected data in the 'Liger' reduction.
+#' @export
+RunLiger <- function(SerObj = NULL, batch = "batch", k = 30, runningTime = FALSE, verbose = FALSE, ...){
+  
+  features <- Seurat::VariableFeatures(SerObj)
+  
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  if(!(batch %in% colnames(SerObj[[]])))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch labels."))
+  
+  tmp <- SerObj[features,]
+  
+  time <- system.time({
+    tmp <- Seurat::ScaleData(tmp, split.by = "batch", do.center = FALSE, verbose = verbose, ...)
+    tmp <- SeuratWrappers::RunOptimizeALS(tmp, k = k, split.by = "batch", ...)
+    tmp <- SeuratWrappers::RunQuantileNorm(tmp, split.by = "batch", ...)
+  })
+  
+  SerObj[["Liger"]] <- tmp[["iNMF"]]
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunComBat
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Seurat SerObj with the corrected data in the 'integrated' assay.
+#' @export
+RunComBat <- function(SerObj = NULL, batch = "batch", runningTime = FALSE, verbose = FALSE, ...){
+  
+  features <- Seurat::VariableFeatures(SerObj)
+  if(length(features) == 0){
+    warning("Variable features not defined. Running 'FindVariableFeatures' function.", call. = TRUE)
+    features <- Seurat::VariableFeatures(Seurat::FindVariableFeatures(SerObj, verbose = verbose))
+  }
+  
+  data <- as.matrix(Seurat::GetAssayData(SerObj, assay = "RNA", slot = "data")[features,])
+  md <- SerObj[[]]
+  
+  if(!(batch %in% colnames(md)))
+    stop(paste0(batch, "not found in SerObj's metadata. Check the batch label."))
+  
+  time <- system.time({
+    corrData <- sva::ComBat(dat = data, batch = md[[batch]], ...)
+  })
+  
+  SerObj[["integrated"]] <- Seurat::CreateAssaySerObj(counts = corrData)
+  Seurat::DefaultAssay(SerObj) <- "integrated"
+  Seurat::VariableFeatures(SerObj) <- features
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+#' RunHarmony
+#'
+#' @param SerObj A seurat SerObj to correct batch effects.
+#' @param batch Batch labels.
+#' @param dims Dimensions to use in the correction.
+#' @param runningTime Return the running time.
+#' @param verbose Print verbose.
+#' @param ... Arguments passed to other methods.
+#'
+#' @return Seurat SerObj with the corrected data in the 'harmony' reduction.
+#' @export
+RunHarmony <- function(SerObj = NULL, batch = "batch", dims = 10, runningTime = FALSE, verbose = FALSE, ...){
+  
+  if(!("pca" %in% Seurat::Reductions(SerObj))){
+    if(verbose)
+      print("Running PCA.")
+    time <- system.time({
+      SerObj <- GetPCA(SerObj = SerObj, dims = dims, verbose = verbose, ...)
+      SerObj <- harmony::RunHarmony(SerObj = SerObj, group.by.vars = batch, dims.use = 1:dims, verbose = verbose, ...)
+    })
+  }else{
+    time <- system.time({
+      SerObj <- harmony::RunHarmony(SerObj = SerObj, group.by.vars = batch, dims.use = 1:dims, verbose = verbose, ...)
+    })
+  }
+  
+  if(runningTime == FALSE)
+    return(SerObj)
+  else
+    return(list(SerObj = SerObj, time = time))
+}
+
+
+
+
+
+
+#' @title k-Nearest Neighbour Batch Effect Test
+#'
+#' @description Wrapper function of kBET for Seurat SerObjs.
+#'
+#' @details
+#' General principles behind kBET:
+#'
+#' When batch effect exists in a dataset, the dataset contains disproportional amounts of samples from each batch within neiborhoods surrounding
+#' each point. Using Chi-squared statistics, test whether the proportion of each batch within a neighborhood is disproportional. If it's not
+#' proportional (i.e. p < critical value), reject null hypothesis (proportional distribution).
+#' kBET aggregates the test results computed from multiple neighborhoods, and reports a "rejection rate" as a metric for batch effect. High
+#' rejection rate indicates strong batch effect, whereas low "rejection rate" indicates mild batch effect.
+#' For "acceptance rate", it is simply a rescaled value of "rejection rate", computed as `acceptance rate = 1 - rejection rate`.
+#'
+#' Publication: Büttner, M., Miao, Z., Wolf, F.A., Teichmann, S.A., and Theis, F.J. (2019). A test metric for assessing single-cell RNA-seq batch
+#' correction. Nat Methods.
+#'
+#' Github repo: https://github.com/theislab/kBET
+#'
+#' @param SerObj A Seurat SerObj.
+#' @param sketch.size Number of cells to sketch. By default sketch 1000 cells.
+#' @param assay Assay used for sketching. "RNA" by default.
+#' @param slot By default slot = "data".
+#' @param k0 Neighborhood size. By default k0 = mean batch size. To prevent kBET rejection rate from saturating to 1, lower this value.
+#' @param ... Arguments passed to kBET.
+#'
+#' @examples
+#' res <- CalckBET(pbmc_small, "groups")
+#'
+#' @return A list containing detailed results calculated by kBET.
+#' @export
+#'
+CalckBET <- function(SerObj, ident, k0 = NULL, knn = NULL, assay = "RNA", layer = "scale.data",
+                     ...){
+  batch <- as.character(SerObj[[ident]][,1])
+  data <- t(as.matrix(Seurat::GetAssayData(SerObj, assay = assay, layer = layer)))
+  batch.estimate <- kBET::kBET(data, batch, k0 = k0, ...)
+  return(batch.estimate)
+}
+
+
+
+#' @title Cell Score Feature Plot
+#'
+#' @description Plots a feature plot of cell scores from a specific reduction
+#'
+#' @details
+#' General principles behind it:
+#'
+#' @param SerObj A Seurat SerObj.
+#' @param reduction which reduction to use to get cell scores
+#' @param plot if true returns plot else returns SerObj with CellScore
+#' @param plotting_reduction a reduction for plotting.
+#' @param raster raster or not
+#' @param raster.dpi default c(2000, 2000)
+#' @param pt.size point size passed to featureplot
+#' @param order default T passed to featureplot
+
+#'
+#' @examples
+#' CellScore_FeaturePlot(SerObj = SerObj, compN = 3, reduction = "inmf",
+#' plotting_reduction = "liger_r1_umap", plot = T,
+#' pt.size = .5)
+#'
+#' @return plot or SerObj 
+#' @export
+#'
+CellScore_FeaturePlot <- function(SerObj, 
+                                  reduction = "inmf", 
+                                  compN = 1, 
+                                  plot = T,
+                                  plotting_reduction = "umap",
+                                  raster = F,
+                                  raster.dpi = c(2000, 2000),
+                                  pt.size = .1, order = T){
+  
+  if(!reduction %in% names(SerObj@reductions)) stop("reduction not found")
+  if(compN > ncol(SerObj@reductions[[reduction]]@cell.embeddings)) stop("CompN > Numb of Features in reduction")
+  
+  
+  SerObj$CellScore = SerObj@reductions[[reduction]]@cell.embeddings[,compN]
+  
+  if(plot) {
+    
+    FeaturePlot(SerObj,
+                features="CellScore",
+                reduction = plotting_reduction,
+                raster = raster,
+                raster.dpi = raster.dpi,
+                pt.size = pt.size,
+                max.cutoff = 'q99', min.cutoff = 'q01',
+                order = order) +
+      # coord_flip()  + scale_y_reverse() +
+      theme_classic(base_size = 14) + NoLegend()+
+      theme(axis.line = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank() #,plot.title = element_blank()
+      )   &
+      ggplot2::scale_colour_gradientn(colours = c("navy", "darkblue", "dodgerblue", "gold", "red", "maroon"))
+    
+    
+  } else {
+    return(SerObj)
+  }
+}
+
+
+
+#' @title Cell Score Violin Plot
+#'
+#' @description Plots a violin plot of cell scores from a specific reduction
+#'
+#' @details
+#' General principles behind it:
+#'
+#' @param SerObj A Seurat SerObj.
+#' @param reduction which reduction to use to get cell scores
+#' @param plot if true returns plot else returns SerObj with CellScore
+#' @param raster raster or not
+#' @param pt.size point size passed to featureplot
+#' @param cols color vector passed to VlnPlot
+
+#'
+#' @examples
+#' CellScore_VlnPlot(SerObj = ComboSerObj_Ser, compN = 2, reduction = "inmf",
+#' plot = T, pt.size = .5,  group.by = "Species", cols = col_vector)
+#'
+#' @return plot or SerObj 
+#' @export
+#'
+CellScore_VlnPlot <- function(SerObj, 
+                              reduction = "inmf",
+                              group.by = "orig.ident",
+                              compN = 1, 
+                              plot = T,
+                              raster = F,
+                              pt.size = .1,
+                              cols = NULL){
+  
+  if(!reduction %in% names(SerObj@reductions)) stop("reduction not found")
+  if(compN > ncol(SerObj@reductions[[reduction]]@cell.embeddings)) stop("CompN > Numb of Features in reduction")
+  
+  
+  SerObj$CellScore = asinh(SerObj@reductions[[reduction]]@cell.embeddings[,compN])
+  
+  if(plot) {
+    
+    VlnPlot(SerObj,
+            features="CellScore",
+            group.by = group.by,
+            raster = raster,
+            pt.size = pt.size,
+            cols = cols) + theme_classic(base_size = 14) 
+    
+    
+    
+  } else {
+    return(SerObj)
+  }
+}
+
+
+
+
+#' @title Cell Score Ridge Plot
+#'
+#' @description Plots a ridge plot of cell scores from a specific reduction
+#'
+#' @details
+#' General principles behind it:
+#'
+#' @param SerObj A Seurat SerObj.
+#' @param reduction which reduction to use to get cell scores
+#' @param plot if true returns plot else returns SerObj with CellScore
+#' @param raster raster or not
+#' @param pt.size point size passed to featureplot
+#' @param cols color vector passed to VlnPlot
+
+#'
+#' @examples
+#' CellScore_RidgePlot(SerObj = ComboSerObj_Ser, compN = 2, reduction = "inmf",
+#' plot = T,  group.by = "Species", cols = col_vector)
+#'
+#' @return plot or SerObj 
+#' @export
+#'
+CellScore_RidgePlot <- function(SerObj, 
+                                reduction = "inmf",
+                                group.by = "orig.ident",
+                                compN = 1, 
+                                plot = T,
+                                cols = NULL){
+  
+  if(!reduction %in% names(SerObj@reductions)) stop("reduction not found")
+  if(compN > ncol(SerObj@reductions[[reduction]]@cell.embeddings)) stop("CompN > Numb of Features in reduction")
+  
+  
+  SerObj$CellScore = asinh(SerObj@reductions[[reduction]]@cell.embeddings[,compN])
+  
+  if(plot) {
+    
+    RidgePlot(SerObj,
+              features="CellScore",
+              group.by = group.by,
+              # raster = raster,
+              # pt.size = pt.size,
+              cols = cols) + theme_classic(base_size = 14) 
+    
+    
+    
+  } else {
+    return(SerObj)
+  }
+}
+
+

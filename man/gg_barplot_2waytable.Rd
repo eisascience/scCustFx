@@ -2,7 +2,7 @@
 % Please edit documentation in R/Visualizations_tables.R
 \name{gg_barplot_2waytable}
 \alias{gg_barplot_2waytable}
-\title{gg_barplot_table, aka OOSAP::PlotMyTable}
+\title{gg_barplot_2waytable, aka OOSAP::PlotMyTable}
 \usage{
 gg_barplot_2waytable(
   MyTable,
@@ -26,7 +26,7 @@ gg_barplot_2waytable(
 
 \item{legend.position}{legend position defautl "bottom"}
 
-\item{PlotCombo}{if T plots % and count plots together}
+\item{PlotCombo}{if T plots and count plots together}
 
 \item{xlab}{x axis label}
 
