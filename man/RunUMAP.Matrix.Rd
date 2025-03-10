@@ -2,7 +2,7 @@
 % Please edit documentation in R/UMAP.R
 \name{RunUMAP.Matrix}
 \alias{RunUMAP.Matrix}
-\title{Run UMAP dimensionality reduction on a matrix}
+\title{Perform UMAP Dimensionality Reduction on a Matrix}
 \usage{
 \method{RunUMAP}{Matrix}(
   DGEmat,
@@ -10,68 +10,49 @@
   n.neighbors = 30L,
   n.components = 2L,
   metric = "correlation",
-  n.epochs = NULL,
-  learning.rate = 1,
   min.dist = 0.3,
   spread = 1,
-  set.op.mix.ratio = 1,
-  local.connectivity = 1L,
-  repulsion.strength = 1,
-  negative.sample.rate = 5,
-  a = NULL,
-  b = NULL,
   seed.use = 42,
-  metric.kwds = NULL,
-  angular.rp.forest = FALSE,
   reduction.key = "UMAP_",
   verbose = TRUE,
   ...
 )
 }
 \arguments{
-\item{DGEmat}{matrix of gene expression data}
+\item{DGEmat}{A numeric matrix where rows represent samples and columns represent features.}
 
-\item{assay}{character name for the assay}
+\item{assay}{Optional assay information (not used in this implementation).}
 
-\item{n.neighbors}{integer, number of neighbors to use}
+\item{n.neighbors}{Integer. Number of nearest neighbors to consider (default: 30).}
 
-\item{n.components}{integer, number of dimensions to keep}
+\item{n.components}{Integer. Number of dimensions for the reduced space (default: 2).}
 
-\item{metric}{character, metric to use for distance calculation}
+\item{metric}{Character. Distance metric to use (default: "correlation"). Options include `"euclidean"`, `"cosine"`, `"manhattan"`, etc.}
 
-\item{n.epochs}{integer, number of epochs for optimization}
+\item{min.dist}{Numeric. Minimum distance between embedded points (default: 0.3).}
 
-\item{learning.rate}{numeric, learning rate for optimization}
+\item{spread}{Numeric. Spread of the UMAP embedding (default: 1).}
 
-\item{min.dist}{numeric, minimum distance between points}
+\item{seed.use}{Integer. Seed for reproducibility (default: 42).}
 
-\item{spread}{numeric, spread of clusters}
+\item{reduction.key}{Character. Prefix for naming UMAP dimensions in the output (default: "UMAP_").}
 
-\item{set.op.mix.ratio}{numeric, mix ratio for set operation}
+\item{verbose}{Logical. Whether to print progress messages (default: TRUE).}
 
-\item{local.connectivity}{integer, controls local connectivity}
-
-\item{repulsion.strength}{numeric, repulsion strength}
-
-\item{negative.sample.rate}{integer, number of negative samples}
-
-\item{a}{numeric, parameter for umap}
-
-\item{b}{numeric, parameter for umap}
-
-\item{seed.use}{integer, seed for reproducibility}
-
-\item{metric.kwds}{list, additional arguments for metric}
-
-\item{angular.rp.forest}{logical, use angular random projection forest}
-
-\item{reduction.key}{character, prefix for reduction result names}
-
-\item{verbose}{logical, verbosity flag}
+\item{...}{Additional arguments passed to `uwot::umap()`.}
 }
 \value{
-matrix of reduced dimensions
+A matrix of reduced UMAP coordinates with row names corresponding to `DGEmat`.
 }
 \description{
-Run UMAP dimensionality reduction on a matrix
+This function applies the Uniform Manifold Approximation and Projection (UMAP) algorithm 
+to reduce the dimensionality of a given data matrix using the native R `uwot` package.
+}
+\examples{
+\dontrun{
+if(requireNamespace("uwot", quietly = TRUE)) {
+    data_matrix <- matrix(rnorm(1000), nrow = 100, ncol = 10)
+    umap_results <- RunUMAP.Matrix(DGEmat = data_matrix)
+}
+}
 }

@@ -2803,3 +2803,313 @@ CellScore_RidgePlot <- function(SerObj,
 }
 
 
+
+
+
+
+
+#' Run Integration Pipeline for Single-Cell Data
+#'
+#' This function performs multiple integration methods (Unintegrated, Harmony, RPCA, reference-based RPCA, LIGER) on a Seurat object and returns the integrated object with clustering and UMAP embeddings.
+#'
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data to be integrated.
+#' @param do.UnIntg Logical. If `TRUE`, performs the unintegrated analysis using PCA. Default is `TRUE`.
+#' @param do.Harmony Logical. If `TRUE`, performs the Harmony-based integration. Default is `TRUE`.
+#' @param useVarGenes Logical. If `TRUE`, uses variable genes for integration. Default is `TRUE`.
+#' @param nfeatures Numeric. The number of variable features to select if `useVarGenes` is `TRUE`. Default is `2000`.
+#' @param spikeInGenes Character vector. A vector of spike-in genes to be added to the variable genes for semi-supervised integration. Default is `NULL`.
+#' @param dims Numeric vector. Dimensions to use for PCA/UMAP and clustering (default is 1:15).
+#' @param harmony_res Numeric. The resolution for clustering after Harmony integration. Default is `0.2`.
+#' @param rpca_res Numeric. The resolution for clustering after RPCA integration. Default is `0.2`.
+#' @param rpca_ref_res Numeric. The resolution for clustering after reference-based RPCA integration. Default is `0.4`.
+#' @param reference Integer. Specifies which dataset to use as a reference for reference-based RPCA. Default is `1`.
+#' @param LigerK Integer. The number of factors for LIGER integration. Default is `20`.
+#' @param nIteration Integer. The number of iterations for LIGER's INMF algorithm. Default is `30`.
+#' @param Liger_res Numeric. The resolution for clustering after LIGER integration. Default is `0.4`.
+#' @param do.rPCA Logical. If `TRUE`, performs RPCA integration. Default is `TRUE`.
+#' @param do.rPCAref Logical. If `TRUE`, performs reference-based RPCA integration. Default is `TRUE`.
+#' @param do.LIGER Logical. If `TRUE`, performs LIGER-based integration. Default is `TRUE`.
+#'
+#' @return The Seurat object (`SerObj`) with added integration results, UMAP embeddings, and cluster assignments for each method run.
+#' 
+#' @examples
+#' # Run integration with default settings
+#' integrated_obj <- Run_Integration(SerObj)
+#'
+#' # Run only Harmony and RPCA integration
+#' integrated_obj <- Run_Integration(SerObj, do.UnIntg = FALSE, do.Harmony = TRUE, do.rPCA = TRUE, do.LIGER = FALSE)
+#'
+#' @import Seurat
+#' @import rliger
+#' @export
+Run_Integration <- function(SerObj, 
+                            do.UnIntg = T,
+                            do.Harmony = T,
+                                     useVarGenes = TRUE, 
+                                     nfeatures = 2000, 
+                                     spikeInGenes = NULL, 
+                                     dims = 1:15, 
+                                     harmony_res = 0.2, 
+                                     rpca_res = 0.2, 
+                                     rpca_ref_res = 0.4, 
+                                     reference = 1, 
+                                     LigerK = 20, 
+                                     nIteration = 30, 
+                                     Liger_res = 0.4) {
+  
+  library(Seurat)
+  library(rliger)
+  
+  
+  # Variable feature selection if requested
+  if (useVarGenes) {
+    SerObj <- FindVariableFeatures(SerObj, nfeatures = nfeatures)
+    variable_genes <- VariableFeatures(SerObj)
+    if (!is.null(spikeInGenes)) {
+      SemiSupervisedGeneSpace <- union(variable_genes, spikeInGenes)
+    } else {
+      SemiSupervisedGeneSpace <- variable_genes
+    }
+  } else {
+    SemiSupervisedGeneSpace <- rownames(SerObj)
+  }
+  
+  SerObj <- NormalizeData(SerObj)
+  # Scaling data and PCA with selected gene set
+  SerObj <- ScaleData(SerObj, features = SemiSupervisedGeneSpace)
+  SerObj <- RunPCA(SerObj, features = SemiSupervisedGeneSpace)
+  
+  if(do.UnIntg){
+  # Unintegrated Analysis
+  SerObj <- FindNeighbors(SerObj, dims = dims, reduction = "pca")
+  SerObj <- FindClusters(SerObj, resolution = 0.1, cluster.name = "unintegrated_clusters")
+  SerObj <- RunUMAP(SerObj, dims = dims, reduction = "pca", reduction.name = "umap.unintegrated")
+  }
+  
+  if(do.Harmony){
+  # Harmony Integration
+  SerObj <- IntegrateLayers(object = SerObj, method = HarmonyIntegration, orig.reduction = "pca", new.reduction = "harmony", verbose = TRUE)
+  SerObj <- FindNeighbors(SerObj, reduction = "harmony", dims = dims)
+  SerObj <- FindClusters(SerObj, resolution = harmony_res, cluster.name = "harmony_clusters")
+  SerObj <- RunUMAP(SerObj, reduction = "harmony", dims = dims, reduction.name = "umap.harmony")
+  }
+  
+  if(do.rPCA){
+  # RPCA Integration
+  SerObj <- IntegrateLayers(object = SerObj, method = RPCAIntegration, orig.reduction = "pca", new.reduction = "integrated.rpca", verbose = TRUE)
+  SerObj <- FindNeighbors(SerObj, reduction = "integrated.rpca", dims = dims)
+  SerObj <- FindClusters(SerObj, resolution = rpca_res, cluster.name = "rpca_clusters")
+  SerObj <- RunUMAP(SerObj, reduction = "integrated.rpca", dims = dims, reduction.name = "umap.rpca")
+  }
+  if(do.rPCAref){
+  # Reference-based RPCA Integration
+  SerObj <- IntegrateLayers(object = SerObj, method = RPCAIntegration, k.anchor = 20, reference = reference, orig.reduction = "pca", new.reduction = "integrated.rpca.ref1", verbose = TRUE)
+  SerObj <- FindNeighbors(SerObj, reduction = "integrated.rpca.ref1", dims = dims)
+  SerObj <- FindClusters(SerObj, resolution = rpca_ref_res, cluster.name = "rpca_r1_clusters")
+  SerObj <- RunUMAP(SerObj, reduction = "integrated.rpca.ref1", dims = dims, reduction.name = "umap.rpca_r1")
+  }
+  
+  if(do.LIGER){
+  # LIGER Integration
+  SerObj <- SerObj %>%
+    normalize(assay = NULL, layer = "counts", save = "ligerNormData") %>%
+    selectGenes(thresh = 0.1, nGenes = NULL, alpha = 0.99, useDatasets = NULL, 
+                layer = "ligerNormData", datasetVar = "orig.ident") %>%
+    scaleNotCenter(layer = "ligerNormData", save = "ligerScaleData", 
+                   datasetVar = "orig.ident", features = NULL)
+  
+  SerObj <- SerObj %>%
+    runINMF(k = LigerK, lambda = 5, datasetVar = "orig.ident", 
+            layer = "ligerScaleData", reduction = "inmf", 
+            nIteration = nIteration, seed = 1) %>%
+    quantileNorm(reduction = "inmf", clusterName = "quantileNorm_cluster", seed = 1)
+  
+  SerObj <- FindNeighbors(SerObj, reduction = "inmfNorm", dims = 1:LigerK)
+  SerObj <- FindClusters(SerObj, resolution = Liger_res, cluster.name = "liger_r1_clusters")
+  SerObj <- RunUMAP(SerObj, reduction = "inmfNorm", dims = 1:LigerK, reduction.name = "umap.liger")
+  
+  }
+  
+  # Final Report Summary (optional print of cluster/UMAP status)
+  cat("Integration completed with the following clusters and UMAP embeddings:\n")
+  if(do.UnIntg) cat("1. Unintegrated Clusters: unintegrated_clusters\n")
+  if(do.LIGER) cat("2. Harmony Clusters: harmony_clusters\n")
+  if(do.rPCA) cat("3. RPCA Clusters: rpca_clusters\n")
+  if(do.rPCAref) cat("4. RPCA Ref1 Clusters: rpca_r1_clusters\n")
+  if(do.LIGER) cat("5. LIGER Clusters: liger_r1_clusters\n")
+  
+  return(SerObj)
+}
+
+
+
+
+
+#' Compute Silhouette Score for a Seurat Object
+#'
+#' This function calculates the silhouette score for a Seurat object based on the provided dimensional reduction method (e.g., PCA, UMAP) and the metadata label (e.g., batch or biological annotation).
+#'
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data.
+#' @param reduction Character. The dimensional reduction method to use for computing the silhouette score (e.g., "pca", "umap"). Default is `"pca"`.
+#' @param dims Numeric vector. The dimensions of the reduced embedding to use. Default is `1:15`.
+#' @param batch.label Character. The metadata label from `SerObj@meta.data` to use for silhouette computation (e.g., "batch", "cell_type"). Default is `"cell_type"`.
+#'
+#' @return The average silhouette width for the given reduction and metadata label. Higher scores indicate better separation of the specified groups.
+#'
+#' @examples
+#' # Compute silhouette score for PCA reduction using cell_type as labels
+#' silhouette_score <- ComputeSilhouette_Ser(SerObj, reduction = "pca", dims = 1:15, batch.label = "cell_type")
+#'
+#' # Compute silhouette score for UMAP reduction using batch as labels
+#' silhouette_score <- ComputeSilhouette_Ser(SerObj, reduction = "umap", dims = 1:10, batch.label = "batch")
+#'
+#' @import Seurat
+#' @importFrom cluster silhouette
+#' @export
+ComputeSilhouette_Ser <- function(SerObj, reduction = "pca", dims = 1:15, batch.label = "cell_type") {
+  library(cluster)
+  # Extract the reduced PCA/UMAP embedding
+  embedding <- Embeddings(SerObj, reduction = reduction)[, dims]
+  
+  # Extract the cluster labels or biological labels
+  labels <- SerObj@meta.data[[batch.label]]
+  
+  # Compute silhouette score
+  sil <- silhouette(as.numeric(as.factor(labels)), dist(embedding))
+  
+  # Return the average silhouette width
+  mean(sil[, 3])
+}
+
+
+
+
+
+
+
+#' Compute LISI (Local Inverse Simpson's Index) for a Seurat Object
+#'
+#' This function calculates the LISI (Local Inverse Simpson's Index) scores for batch mixing and biological signal preservation based on a specified dimensional reduction (e.g., PCA, UMAP) for a Seurat object.
+#'
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data.
+#' @param reduction Character. The dimensional reduction method to use for LISI computation (e.g., "pca", "umap"). Default is `"pca"`.
+#' @param dims Numeric vector. The dimensions of the reduced embedding to use. Default is `1:15`.
+#' @param batch.label Character. The metadata label representing batch information in `SerObj@meta.data`. Default is `"batch"`.
+#' @param biological.label Character. The metadata label representing biological information (e.g., cell type) in `SerObj@meta.data`. Default is `"cell_type"`.
+#'
+#' @return A list containing the average batch LISI score (`batch_LISI`) and the average biological LISI score (`biological_LISI`). A higher batch LISI score indicates better mixing, and a higher biological LISI score indicates better preservation of biological signal.
+#'
+#' @examples
+#' # Compute LISI scores for PCA reduction with batch and cell type labels
+#' lisi_scores <- ComputeLISI_Ser(SerObj, reduction = "pca", dims = 1:15, batch.label = "batch", biological.label = "cell_type")
+#'
+#' # Compute LISI scores for UMAP reduction
+#' lisi_scores <- ComputeLISI_Ser(SerObj, reduction = "umap", dims = 1:10, batch.label = "batch", biological.label = "cell_type")
+#'
+#' @import Seurat
+#' @importFrom lisi compute_lisi
+#' @export
+ComputeLISI_Ser <- function(SerObj, reduction = "pca", dims = 1:15, batch.label = "batch", biological.label = "cell_type") {
+  
+  # devtools::install_github("immunogenomics/lisi")
+  library(lisi)
+  
+  # Extract the reduced PCA/UMAP embedding
+  embedding <- Embeddings(SerObj, reduction = reduction)[, dims]
+  
+  # Create a metadata dataframe for LISI
+  meta_data <- SerObj@meta.data[, c(batch.label, biological.label)]
+  
+  # Compute LISI
+  lisi_scores <- compute_lisi(embedding, meta_data, c(batch.label, biological.label))
+  
+  # Separate the batch LISI and biological LISI
+  batch_lisi <- mean(lisi_scores[[batch.label]])
+  biological_lisi <- mean(lisi_scores[[biological.label]])
+  
+  # Return both scores as a list
+  list(batch_LISI = batch_lisi, biological_LISI = biological_lisi)
+}
+
+
+
+#' Compute kBET (k-nearest neighbor Batch Effect Test) for a Seurat Object
+#'
+#' This function calculates the kBET (k-nearest neighbor Batch Effect Test) rejection rate to assess the batch effect correction for a Seurat object, based on a specified dimensional reduction (e.g., PCA, UMAP).
+#'
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data.
+#' @param reduction Character. The dimensional reduction method to use for kBET computation (e.g., "pca", "umap"). Default is `"pca"`.
+#' @param dims Numeric vector. The dimensions of the reduced embedding to use. Default is `1:15`.
+#' @param batch.label Character. The metadata label representing batch information in `SerObj@meta.data`. Default is `"batch"`.
+#'
+#' @return The mean kBET rejection rate. A lower rejection rate indicates better batch mixing and less batch effect.
+#'
+#' @examples
+#' # Compute kBET for PCA reduction using batch labels
+#' kbet_score <- ComputekBET_ser(SerObj, reduction = "pca", dims = 1:15, batch.label = "batch")
+#'
+#' # Compute kBET for UMAP reduction using batch labels
+#' kbet_score <- ComputekBET_ser(SerObj, reduction = "umap", dims = 1:10, batch.label = "batch")
+#'
+#' @import Seurat
+#' @importFrom kBET kBET
+#' @export
+ComputekBET_ser <- function(SerObj, reduction = "pca", dims = 1:15, batch.label = "batch") {
+  
+  # devtools::install_github('theislab/kBET')
+  
+  library(kBET)
+  
+  # Extract the reduced PCA/UMAP embedding
+  embedding <- Embeddings(SerObj, reduction = reduction)[, dims]
+  
+  # Extract the batch labels
+  batch <- SerObj@meta.data[[batch.label]]
+  
+  # Run kBET
+  kbet_result <- kBET(embedding, batch)
+  
+  # Return the mean rejection rate (lower is better)
+  mean(kbet_result$stats$kBET_observed)
+}
+
+
+
+
+
+#' Compute Adjusted Rand Index (ARI) for a Seurat Object
+#'
+#' This function calculates the Adjusted Rand Index (ARI) between the true biological labels (e.g., cell types) and the predicted cluster assignments in a Seurat object. ARI is used to evaluate the similarity between two clustering results.
+#'
+#' @param SerObj A Seurat object containing the single-cell RNA-seq data.
+#' @param true.label Character. The metadata label representing the true biological labels (e.g., "cell_type") in `SerObj@meta.data`. Default is `"cell_type"`.
+#' @param predicted.label Character. The metadata label representing the predicted cluster assignments (e.g., "seurat_clusters") in `SerObj@meta.data`. Default is `"seurat_clusters"`.
+#'
+#' @return The Adjusted Rand Index (ARI) score. A higher ARI indicates better alignment between the true labels and the predicted clusters.
+#'
+#' @examples
+#' # Compute ARI between true cell types and predicted Seurat clusters
+#' ari_score <- ComputeARI_Ser(SerObj, true.label = "cell_type", predicted.label = "seurat_clusters")
+#'
+#' # Compute ARI for a different set of predicted clusters
+#' ari_score <- ComputeARI_Ser(SerObj, true.label = "cell_type", predicted.label = "cluster_method_X")
+#'
+#' @import Seurat
+#' @importFrom mclust adjustedRandIndex
+#' @export
+ComputeARI_Ser <- function(SerObj, true.label = "cell_type", predicted.label = "seurat_clusters") {
+  library(mclust)
+  # Extract the true biological labels (e.g., cell type)
+  true_labels <- SerObj@meta.data[[true.label]]
+  
+  # Extract the cluster assignments
+  predicted_labels <- SerObj@meta.data[[predicted.label]]
+  
+  # Compute Adjusted Rand Index (ARI)
+  ARI <- adjustedRandIndex(as.numeric(as.factor(true_labels)), as.numeric(as.factor(predicted_labels)))
+  
+  # Return ARI
+  ARI
+}
+
+

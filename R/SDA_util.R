@@ -1,4 +1,70 @@
 
+#' Preprocess Raw Count Matrix for SDA
+#'
+#' This function preprocesses a raw gene expression count matrix by performing basic quality control checks,
+#' computing library sizes, and visualizing feature distributions per cell/sample. It returns a list containing 
+#' the filtered expression matrix and selected features.
+#'
+#' @param rawCountMat A numeric matrix or sparse matrix where rows represent features (genes) and columns represent cells/samples.
+#' @param minLibrarySize Integer. Minimum library size threshold for filtering (default: 1).
+#'
+#' @return A list containing:
+#' \item{GEX}{Preprocessed count matrix (same as input for now).}
+#' \item{featuresToUse}{Vector of feature (gene) names included in preprocessing.}
+#' \item{minLibrarySize}{The minimum library size threshold used.}
+#'
+#' @details The function checks if the number of cells/samples exceeds recommended limits for SDA (Sparse Decomposition of Arrays).
+#' It then calculates total features per cell, generates a density plot with peak estimation, and returns the input data along with feature metadata.
+#' 
+#' @importFrom Matrix colSums
+#' @importFrom stats density
+#' @importFrom ggplot2 ggplot aes geom_density scale_x_sqrt geom_vline ggtitle labs theme_bw
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' if(requireNamespace("Matrix", quietly = TRUE)) {
+#'     raw_counts <- Matrix::Matrix(rpois(1000, lambda = 10), nrow = 100, ncol = 10, sparse = TRUE)
+#'     processed_data <- SDA_counts_preproc(raw_counts)
+#'     str(processed_data)
+#' }
+#' }
+SDA_counts_preproc <- function (rawCountMat, minLibrarySize = 1) 
+{
+  #counter part with Seurat object is SDA_ser_preproc
+  
+  # rawCountMat = count_data_EM;
+  
+  n_cells <- ncol(rawCountMat) #for bulk this is n_samples
+  if (n_cells > 2e+05) {
+    stop("SDA has shown to max handle ~200K cells ")
+  } else if (n_cells > 150000) {
+    warning("SDA has shown to max handle ~150K cells ")
+  }
+  print(paste0("Initial features: ", nrow(rawCountMat)))
+  print(paste0("Initial cells: ", ncol(rawCountMat)))
+  
+  featuresToUse <- rownames(rawCountMat)
+  
+  df <- data.frame(x = Matrix::colSums(rawCountMat[featuresToUse, ]))
+  
+  dens <- stats::density(df$x)
+  mx <- dens$x[which.max(dens$y)]
+  
+  ggplot(df, aes(x = x)) + scale_x_sqrt() + geom_density() + 
+    ggtitle("Total features per cell") + labs(x = "Features/Cell", 
+                                              y = "Density") + geom_vline(xintercept = mx, color = "red") + 
+    ggtitle(paste0("Library Size: Peak = ", mx)) + theme_bw()
+  
+  print("starting dropsim normaliseDGE")
+  return(list(GEX = rawCountMat, 
+              featuresToUse = featuresToUse, 
+              minLibrarySize = minLibrarySize))
+}
+
+
+
 #' Gene overlap across components
 #'
 #' Given a set of genes and a dataframe of gene expression values across multiple components, this function computes the number of overlapping genes in the top \code{Ngenes} of each component with the input gene set. 

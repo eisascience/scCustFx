@@ -24,7 +24,7 @@ gg_barplot_2waytable(
 
 \item{Title}{A title else ""}
 
-\item{legend.position}{legend position defautl "bottom"}
+\item{legend.position}{legend position default "bottom"}
 
 \item{PlotCombo}{if T plots and count plots together}
 
