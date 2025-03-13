@@ -2,7 +2,7 @@
 % Please edit documentation in R/GO_analysis.R
 \name{enrichGOFunction}
 \alias{enrichGOFunction}
-\title{Enrich GO Function}
+\title{Perform GO Enrichment Analysis and Visualization}
 \usage{
 enrichGOFunction(
   gene_set,
@@ -16,22 +16,55 @@ enrichGOFunction(
   fontsize = 0.25,
   base_size = 18,
   max.overlaps = 20,
-  MaxNsig = 30
+  MaxNsig = 30,
+  legend.position = "bottom"
 )
 }
 \arguments{
-\item{gene_set}{A vector of gene symbols for the enrichment analysis.}
+\item{gene_set}{A character vector of gene symbols to be analyzed.}
 
-\item{title}{The title to be added to the plot title.}
+\item{title}{A character string specifying the plot title.}
 
-\item{title_suffix}{The suffix to be added to the plot title.}
+\item{title_suffix}{A character string to be appended to the title.}
 
-\item{gene_universe}{The vector of gene symbols as the universe.}
+\item{gene_universe}{A character vector of all possible genes for enrichment analysis.}
+
+\item{p.adjust.thr}{Numeric; threshold for adjusted p-values to highlight significant terms in the plot. Default is `0.05`.}
+
+\item{returnPlot}{Logical; if `TRUE`, returns both the enrichment result and a ggplot visualization. Default is `TRUE`.}
+
+\item{qrhub}{The OrgDb object specifying the organism database (e.g., `"org.Hs.eg.db"` for human, `"org.Mmu.eg.db"` for mouse).}
+
+\item{labsize}{Numeric; text label size for GO terms in the plot. Default is `3`.}
+
+\item{fontsize}{Numeric; font size scaling factor for ggplot. Default is `0.25`.}
+
+\item{base_size}{Numeric; base font size for ggplot theme. Default is `18`.}
+
+\item{max.overlaps}{Integer; controls the maximum number of overlapping labels in `geom_label_repel()`. Default is `20`.}
+
+\item{MaxNsig}{Integer; maximum number of significant GO terms to label in the plot. Default is `30`.}
 }
 \value{
-A ggplot object displaying the GO enrichment analysis results.
+If `returnPlot = TRUE`, returns a list containing:
+  \itemize{
+    \item `ggGO` - A ggplot object visualizing the GO enrichment results.
+    \item `ego` - The `enrichGO()` result object.
+  }
+  If `returnPlot = FALSE`, only the `enrichGO()` result object is returned.
 }
 \description{
-This function performs Gene Ontology (GO) enrichment analysis and generates a
-ggplot object for visualization.
+This function performs Gene Ontology (GO) enrichment analysis using `clusterProfiler::enrichGO()`
+and optionally generates a ggplot-based visualization of the results.
+}
+\examples{
+\dontrun{
+library(clusterProfiler)
+library(org.Hs.eg.db)
+gene_set <- c("TP53", "BRCA1", "EGFR", "MYC", "PTEN") # Example genes
+gene_universe <- unique(keys(org.Hs.eg.db, keytype = "SYMBOL"))
+results <- enrichGOFunction(gene_set, title = "GO Enrichment", title_suffix = " - Example",
+                            gene_universe = gene_universe, qrhub = org.Hs.eg.db)
+print(results[[1]]) # Plot
+}
 }

@@ -112,3 +112,72 @@ cleanmygenes.mouse = function(geneV, keepV=NULL){
   return(geneV)
 }
 
+
+#' Retrieve Homology Information from Ensembl
+#'
+#' This function queries Ensembl using the `biomaRt` package to retrieve ortholog information 
+#' for multiple species relative to human genes. It returns a list where each element contains 
+#' the homology data for a given species.
+#'
+#' @param mirror A character string specifying the Ensembl mirror to use. Default is `"https://uswest.ensembl.org"`.
+#' @param species_list A character vector of species names (in Ensembl format) for which homology data should be retrieved. 
+#'                     Default includes `"mmusculus"`, `"mmulatta"`, `"ppaniscus"`, `"ptroglodytes"`, `"ggorilla"`, `"nleucogenys"`, `"hsapiens"`, and `"cjacchus"`.
+#'
+#' @return A named list where each element contains a data frame with homology information for a given species.
+#'
+#' @import biomaRt dplyr
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' homology_data <- getGeneHomology()
+#' head(homology_data$mmusculus)
+#' }
+getGeneHomology <- function(mirror = "https://uswest.ensembl.org", 
+                            species_list = c(#"mmusculus", 
+                                             "mmulatta"#, 
+                                             # "ppaniscus", 
+                                             # "ptroglodytes", 
+                                             # "ggorilla", 
+                                             # "nleucogenys", 
+                                             #"cjacchus"
+                                             )) {
+  
+  # Initialize HomologyLS list
+  HomologyLS <- list()
+  
+  # Initialize Ensembl Mart
+  ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl", host = mirror)
+  
+  # Function to retrieve ortholog information for a given species
+  get_orthologs <- function(species) {
+    attributes <- c('ensembl_gene_id', 'chromosome_name', 'description',
+                    paste0(species, '_homolog_ensembl_gene'),
+                    paste0(species, '_homolog_orthology_type'),
+                    paste0(species, '_homolog_orthology_confidence'))
+    getBM(attributes = attributes, mart = ensembl)
+  }
+  
+  # Retrieve gene symbols
+  gene_symbols <- getBM(attributes = c('ensembl_gene_id', 'hgnc_symbol'), mart = ensembl)
+  
+  # Loop through species list to get ortholog information and merge with gene symbols
+  for (Species in species_list) {
+    message("Processing: ", Species)
+    
+    # Retrieve ortholog information
+    orthologs <- get_orthologs(Species)
+    
+    # Merge with gene symbols
+    combined_data <- merge(orthologs, gene_symbols, by = "ensembl_gene_id", all.x = TRUE)
+    
+    # Store in list
+    HomologyLS[[Species]] <- combined_data
+    
+    Sys.sleep(2) # Sleep for 2 seconds to avoid spamming the query system
+    message(Species, " done.")
+  }
+  
+  # Return the list
+  return(HomologyLS)
+}

@@ -178,3 +178,32 @@ predict.SDA = function(new.data, sda.model, return_cell_score=T) {
     return(new.predicted)
   }
 }
+
+
+#' Combine loading matrices across multiple SDA runs
+#'
+#' This function takes a list of SDA runs and returns a matrix of loadings that are common across all runs.
+#'
+#' @param sdaRuns A list of SDA runs, each containing a loadings matrix.
+#'
+#' @return A matrix of loadings that are common across all SDA runs.
+#' 
+#' @examples
+#' ## Create a matrix of common loadings across multiple SDA runs
+#' my_loadings <- CommonLoadingSDAMat(sdaRuns = my_sda_runs)
+#'
+#' @export
+CommonLoadingSDAMat = function(sdaRuns){
+  
+  CommonGenes = lapply(sdaRuns, function(x){
+    colnames(x$loadings[[1]])
+  })
+  CommonGenes = Reduce(intersect, CommonGenes)
+  
+  CommonLoadingMat = lapply(sdaRuns, function(x){
+    t(x$loadings[[1]][,CommonGenes])
+  })
+  CommonLoadingMat = do.call(cbind, CommonLoadingMat)
+  
+  return(CommonLoadingMat)
+}
