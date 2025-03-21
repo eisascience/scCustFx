@@ -161,3 +161,16 @@ gg_tSNE_df <- function(DF,
   }
   
 }
+
+
+#' @title rotate_tsne
+#' @description rotates a tsne object 
+#' @param tsne, a tsne object with tsne$Y
+#' @param angle, rotation angle
+#' @return rotated tsne Y
+#' @export
+rotate_tsne <- function(tsne, angle){
+  angle <- (-angle * pi) / (-180)
+  rotm <- matrix(c(cos(angle), -sin(angle), sin(angle), cos(angle)), ncol=2)
+  tsne$Y %*% rotm
+}

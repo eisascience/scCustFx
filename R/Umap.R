@@ -145,3 +145,17 @@ RunUMAP.Matrix <- function(DGEmat, assay = NULL, n.neighbors = 30L, n.components
   
   return(umap_output)
 }
+
+
+
+#' @title rotate_df
+#' @description rotates a 2D df like tsne UMAP etc any scatter 
+#' @param tsne, a 2D df scatter sctructure
+#' @param angle, rotation angle
+#' @return rotated tsne Y
+#' @export
+rotate_df <- function(df, angle){
+  angle <- (-angle * pi) / (-180)
+  rotm <- matrix(c(cos(angle), -sin(angle), sin(angle), cos(angle)), ncol=2)
+  df %*% rotm
+}

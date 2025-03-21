@@ -218,8 +218,6 @@ HeatMap_SDAScore_Thr <- function(SDAscore, Meta = NULL,  GT = T, CutThresh = 0, 
 #'
 #' @return A ggplot object displaying the ridge plot.
 #'
-#' @importFrom ggplot2 ggplot aes geom_density_ridges theme_minimal labs
-#' @importFrom ggridges geom_density_ridges
 #'
 #'
 #' @examples
@@ -384,11 +382,6 @@ analyze_component_scores <- function(scores_matrix,
 #' \item{ranked_results}{A dataframe ranking components by significance (p-values & effect sizes).}
 #' \item{plots}{A list of ggplot objects for top components.}
 #'
-#' @importFrom ggplot2 ggplot aes geom_density_ridges theme_minimal labs
-#' @importFrom ggridges geom_density_ridges
-#' @importFrom stats aov kruskal.test
-#' @importFrom dplyr arrange mutate
-#' @importFrom effsize cohen.d
 #'
 #' @export
 #'
