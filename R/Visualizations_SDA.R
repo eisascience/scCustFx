@@ -171,6 +171,155 @@ plot_loadings_coordinates <- function(SDARedDataLS,
 }
 
 
+#' Plot Loadings Coordinates with Genomic Information
+#'
+#' Generates a genomic coordinate plot of SDA component loadings. The function retrieves gene location
+#' data via biomaRt or uses a local file if provided and available, merges this with the loadings,
+#' and annotates the top positive and negative loading genes. Optionally, specific genes can be highlighted.
+#'
+#' @param SDARedDataLS A list containing SDA loadings.
+#' @param reduction Character or numeric value specifying which reduction to use from the loadings list.
+#' @param mart An optional biomaRt object; if \code{NULL}, it is initialized using \code{useMart} with \code{data_set}.
+#' @param genes An optional data frame of gene coordinates. If \code{NULL}, coordinates are retrieved via biomaRt.
+#' @param dimN Numeric value indicating the component (dimension) index to plot.
+#' @param highlight_genes Optional character vector of gene symbols to highlight in the plot.
+#' @param TopNpos Integer specifying the number of top positive loadings to annotate.
+#' @param TopNneg Integer specifying the number of top negative loadings to annotate.
+#' @param data_set Character string indicating the Ensembl dataset to use (e.g., \code{"hsapiens_gene_ensembl"}).
+#' @param invertWeights Logical. If \code{TRUE}, inverts the loading weights.
+#' @param includeUnMapped Logical. If \code{TRUE}, includes unmapped genes in the plot.
+#' @param geneLocPath Optional character string specifying the file path for pre-saved gene location data.
+#'
+#' @return A \code{ggplot2} object representing the genomic coordinate plot of loadings.
+#' @import biomaRt ggplot2 ggrepel
+#' @export
+plot_loadings_coordinatesV2 <- function(SDARedDataLS,
+                                      reduction,
+                                      mart = NULL,
+                                      genes = NULL,
+                                      dimN,
+                                      highlight_genes = NULL, 
+                                      TopNpos = 10, TopNneg = 10,
+                                      data_set = "hsapiens_gene_ensembl",
+                                      invertWeights = FALSE, 
+                                      includeUnMapped = TRUE, 
+                                      geneLocPath = NULL) {
+  
+  library(biomaRt)
+  library(ggplot2)
+  library(ggrepel)
+  
+  # Initialize mart if needed
+  if (is.null(mart)) {
+    mart <- useMart("ensembl", data_set)
+  }
+  
+  # Get gene coordinates if not provided
+  if (is.null(genes)) {
+    genes <- getBM(attributes = c("chromosome_name", "start_position", "end_position"), mart = mart)
+  }
+  
+  # Calculate chromosome lengths for valid chromosomes
+  valid_chrs <- c(1:22, "X", "Y", "MT")
+  chromosome_length_red <- tapply(genes$end_position, genes$chromosome_name, max)
+  chromosome_length_red <- chromosome_length_red[names(chromosome_length_red) %in% as.character(valid_chrs)]
+  chromosome_lengthsDF <- data.frame(chromosome = names(chromosome_length_red),
+                                     length = as.numeric(chromosome_length_red),
+                                     stringsAsFactors = FALSE)
+  
+  Genes2Map <- colnames(SDARedDataLS$loadings[[reduction]]$loadings)
+  
+  # Get gene_locations: use local file if provided and exists, otherwise perform lookup.
+  if (!is.null(geneLocPath) && file.exists(geneLocPath)) {
+    gene_locations <- readRDS(geneLocPath)
+  } else {
+    if (!is.null(geneLocPath)) {
+      message("File does not exist, downloading new results")
+    }
+    gene_locations <- SDAtools:::get.location(gene.symbols = Genes2Map,
+                                              data_set = data_set,
+                                              gene_name = "external_gene_name")
+    if (!is.null(geneLocPath)) saveRDS(gene_locations, geneLocPath)
+  }
+  
+  # Fix missing positions
+  gene_locations$chromosome_name[is.na(gene_locations$start_position)] <- "?"
+  gene_locations$start_position[is.na(gene_locations$start_position)] <- 1
+  
+  # Calculate centers for each chromosome
+  cl <- do.call(rbind, lapply(unique(gene_locations$chromosome_name), function(chr) {
+    chr_positions <- gene_locations$start_position[gene_locations$chromosome_name == chr]
+    data.frame(chr = chr, center = round((max(chr_positions) - min(chr_positions)) / 2))
+  }))
+  
+  # Include unmapped genes if requested and if any LOC genes are found
+  if (includeUnMapped && any(grepl("^LOC", Genes2Map))) {
+    LOCgenes <- Genes2Map[grepl("^LOC", Genes2Map)]
+    gene_locations <- rbind(gene_locations,
+                            data.frame(gene_symbol = LOCgenes, 
+                                       chromosome_name = rep("?", length(LOCgenes)),
+                                       start_position = rep(1, length(LOCgenes)),
+                                       stringsAsFactors = FALSE))
+  }
+  
+  # Merge gene locations with chromosome lengths and compute genomic position
+  temp <- merge(gene_locations, chromosome_lengthsDF, 
+                by.x = "chromosome_name", by.y = "chromosome", all.x = TRUE)
+  temp$genomic_position <- temp$start_position + temp$length / 2
+  
+  # Get the component (loading) and invert if required
+  component <- SDARedDataLS$loadings[[reduction]]$loadings[dimN, ]
+  if (invertWeights) component <- -component
+  
+  # Create label data and merge with genomic info
+  label_data <- data.frame(gene_symbol = names(component),
+                           loading = component,
+                           stringsAsFactors = FALSE)
+  label_data <- merge(label_data, temp, by = "gene_symbol", all.x = TRUE)
+  
+  # Fix any remaining missing values
+  na_mask <- is.na(label_data$start_position)
+  if (any(na_mask)) {
+    label_data$chromosome_name[na_mask] <- "?"
+    label_data$start_position[na_mask] <- 1
+    label_data$length[na_mask] <- 3
+    label_data$genomic_position[na_mask] <- max(label_data$genomic_position, na.rm = TRUE) + 2
+  }
+  label_data$gene_symbol_show <- ""
+  
+  # Mark top genes based on loading magnitude
+  pos_order <- order(label_data$loading, decreasing = TRUE)
+  neg_order <- order(label_data$loading, decreasing = FALSE)
+  label_data$gene_symbol_show[pos_order[1:TopNpos]] <- label_data$gene_symbol[pos_order[1:TopNpos]]
+  label_data$gene_symbol_show[neg_order[1:TopNneg]] <- label_data$gene_symbol[neg_order[1:TopNneg]]
+  
+  # Create the plot
+  P <- ggplot(label_data, aes(genomic_position, asinh(loading), size = abs(loading)^2)) + 
+    geom_point(stroke = 0, 
+               aes(alpha = abs(loading)^0.7, 
+                   color = ifelse(abs(loading) > 0.05, "cornflowerblue", "grey"))) +
+    scale_color_manual(values = c("cornflowerblue", "grey")) +
+    xlab("Genomic Coordinate") + ylab("Weight") +
+    geom_label_repel(aes(label = gene_symbol_show),
+                     max.overlaps = (max(TopNpos, TopNneg) * 2) + 1,
+                     size = 3,
+                     box.padding = unit(0.5, "lines"),
+                     point.padding = unit(0.1, "lines"),
+                     force = 10,
+                     segment.size = 0.2,
+                     segment.color = "blue") +
+    theme_minimal() + theme(legend.position = "none")
+  
+  # Highlight specified genes if provided
+  if (!is.null(highlight_genes)) {
+    P <- P + geom_point(data = subset(label_data, gene_symbol %in% highlight_genes), color = "red")
+  }
+  
+  return(P)
+}
+
+
+
 #' This function generates a Heatmap of thresholding SDA score
 #'
 #' @param SDAscore vector of SDA score

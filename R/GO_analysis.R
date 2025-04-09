@@ -203,3 +203,37 @@ enrichGOFunction <- function(gene_set, title, title_suffix, gene_universe, p.adj
 }
 
 
+#' GO Volcano Plot
+#'
+#' Generates a volcano plot for Gene Ontology (GO) enrichment results from a specified component of a GO data object.
+#' Highlights significant GO terms (based on adjusted p-value) and labels the top 30 enriched terms with p.adjust < 0.7.
+#'
+#' @param x A list-like object containing GO enrichment results for different components. Default is `GO_data`.
+#' @param component A character string indicating the name of the component within `x` to plot. Default is `"V5N"`.
+#' @param extraTitle An optional string to append to the plot title. If empty, it defaults to `"Component : <component>"`.
+#'
+#' @return A `ggplot` object displaying the volcano plot of GO terms for the specified component.
+#' 
+#' @import ggplot2
+#' @import data.table
+#' @import ggrepel
+#' @export
+#'
+#' @examples
+#' # Assuming GO_data is a properly formatted object with a "V5N" component
+#' go_volcano_plot(GO_data, component = "V5N")
+go_volcano_plot <- function(x=GO_data, component="V5N", extraTitle=""){
+  if(extraTitle=="") extraTitle = paste("Component : ", component, sep="")
+  
+  #print(
+  ggplot(data.table(x[[component]]), aes(GeneOdds/BgOdds, -log(pvalue), size=Count)) +
+    geom_point(aes(colour=p.adjust<0.05)) +
+    scale_size_area() +
+    geom_label_repel(data = data.table(x[[component]])[order(p.adjust)][1:30][p.adjust<0.7], aes(label = Description, size=0.25), size = 3, force=2) + 
+    ggtitle(paste("",extraTitle, sep="\n") ) +
+    xlab("Odds Ratio") +
+    scale_x_log10(limits=c(1,NA), breaks=c(1,2,3,4,5,6,7,8))
+  #)
+}
+
+

@@ -6,7 +6,6 @@
 \usage{
 plot_gsea_volcano(
   gsea_results,
-  ranked_genes,
   top_n = 20,
   pval_cutoff = 0.05,
   nes_cutoff = 1,
@@ -17,8 +16,6 @@ plot_gsea_volcano(
 \arguments{
 \item{gsea_results}{Data frame output from fgsea.}
 
-\item{ranked_genes}{Named vector of ranked log2 fold changes.}
-
 \item{top_n}{Number of top enriched pathways to label.}
 
 \item{pval_cutoff}{Adjusted p-value threshold for significance (default: 0.05).}
@@ -28,6 +25,8 @@ plot_gsea_volcano(
 \item{repel}{Logical. Use `ggrepel` for labels (default: TRUE).}
 
 \item{title}{Plot title (optional).}
+
+\item{ranked_genes}{Named vector of ranked log2 fold changes.}
 }
 \value{
 A ggplot object.

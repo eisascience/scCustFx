@@ -310,26 +310,32 @@ run_fgsea_from_de <- function(de_df,
 
 #' Plot Top Enriched Pathways from fgsea Results
 #'
-#' @param fgsea_res Data frame output from `fgsea`.
+#' @param fgsea_res Data frame output from `fgsea()`.
 #' @param ranked_genes Named vector of ranked log2 fold changes.
 #' @param gene_sets List of gene sets used in fgsea.
 #' @param top_n Integer. Number of pathways to plot.
 #'
-#' @return Generates `ggplot` enrichment plots.
+#' @return List of ggplot enrichment plots.
 #' @export
-plot_top_fgsea <- function(fgsea_res, ranked_genes, gene_sets, top_n = 3) {
+plot_top_fgsea <- function(fgsea_res, ranked_genes, gene_sets, top_n = 3, absNES  = 1.5, padj = 0.05, filterSig = T) {
   if (!requireNamespace("fgsea", quietly = TRUE)) stop("Install fgsea")
   if (!requireNamespace("ggplot2", quietly = TRUE)) stop("Install ggplot2")
   
-  # Select top N significant pathways
-  fgsea_res <- fgsea_res[fgsea_res$padj < 0.05 & abs(fgsea_res$NES) > 1.5, ]
-  fgsea_res <- fgsea_res[order(-abs(fgsea_res$NES)), ]  # Sort by strongest NES
+  if(filterSig){
+    # Filter significant pathways first
+    fgsea_res <- fgsea_res[fgsea_res$padj < padj & abs(fgsea_res$NES) > absNES, ]
+  }
+  
+  
+  # Sort first by p-value (padj), then by absolute NES
+  fgsea_res <- fgsea_res[order(fgsea_res$padj, -abs(fgsea_res$NES)), ]
   
   if (nrow(fgsea_res) == 0) {
     message("No significant enriched pathways found.")
     return(NULL)
   }
   
+  # Select the top N pathways
   top_paths <- fgsea_res$pathway[1:min(top_n, nrow(fgsea_res))]
   
   # Plot each pathway
@@ -337,7 +343,7 @@ plot_top_fgsea <- function(fgsea_res, ranked_genes, gene_sets, top_n = 3) {
   for (path in top_paths) {
     p <- fgsea::plotEnrichment(gene_sets[[path]], ranked_genes) +
       ggplot2::ggtitle(path)
-    print(p)  # Ensure plot appears in RMarkdown
+    print(p)  # Ensure the plot appears in RMarkdown
     plots[[path]] <- p
   }
   
@@ -364,7 +370,7 @@ plot_top_fgsea <- function(fgsea_res, ranked_genes, gene_sets, top_n = 3) {
 #' gsea_plot <- plot_gsea_volcano(gsea_results, ranked_genes)
 #' print(gsea_plot)
 plot_gsea_volcano <- function(gsea_results,
-                              ranked_genes,
+                              # ranked_genes,
                               top_n = 20,
                               pval_cutoff = 0.05,
                               nes_cutoff = 1,
@@ -421,4 +427,229 @@ plot_gsea_volcano <- function(gsea_results,
   }
   
   return(p)
+}
+
+#' Run Gene Set Enrichment Analysis on Loadings
+#'
+#' This function performs gene set enrichment analysis for both positive and negative loadings 
+#' using the \code{clusterProfiler} package with gene sets obtained via \code{msigdbr}.
+#' It extracts the top \code{topN} genes in both directions for a specified component 
+#' and then uses \code{enricher} for enrichment analysis. If any significant enrichment is detected 
+#' (based on the adjusted p-value cutoff), a dotplot is displayed.
+#'
+#' @param loadings A numeric matrix or data frame of gene loadings with genes as row names.
+#'   Rows represent genes and columns represent different components.
+#' @param comp Numeric. The component number (row index) to analyze.
+#' @param topN Numeric. The number of top genes (from both positive and negative directions) to consider.
+#' @param species Character. The species to query from \code{msigdbr}. Default is \code{"Homo sapiens"}.
+#' @param category Character. The gene set category to use (e.g., \code{"H"} for Hallmark). Default is \code{"H"}.
+#' @param pvalueCutoff Numeric. The p-value cutoff to consider enrichment as significant. Default is 0.05.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{enrichedPos}{An object of class \code{enrichResult} with enrichment results for positively loaded genes.}
+#'   \item{enrichedNeg}{An object of class \code{enrichResult} with enrichment results for negatively loaded genes.}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#'   # Assuming results$loadings[[1]] is a numeric matrix with gene symbols as row names:
+#'   loadings <- results$loadings[[1]]
+#'   enrichmentResults <- run_bidirectional_enrichment(loadings, comp = 2, topN = 100)
+#' }
+#'
+#' @importFrom clusterProfiler enricher dotplot
+#' @import msigdbr
+#' @export
+run_bidirectional_enrichment <- function(loadings, comp, topN, 
+                           species = "Homo sapiens", category = "H", 
+                           pvalueCutoff = 0.05, doPlot = F) {
+  
+  # Check that loadings has row names representing gene symbols
+  if(is.null(rownames(loadings))) {
+    stop("loadings must have row names representing gene symbols")
+  }
+  
+  # Load gene sets from msigdbr
+  m_df <- msigdbr::msigdbr(species = species, category = category)
+  
+  # Extract top positively and negatively loaded genes for the specified component
+  topPos <- names(sort(loadings[comp, ], decreasing = TRUE))[1:topN]
+  topNeg <- names(sort(loadings[comp, ], decreasing = FALSE))[1:topN]
+  
+  # Enrichment analysis using clusterProfiler's enricher function
+  enrichedPos <- clusterProfiler::enricher(topPos,
+                                           TERM2GENE = m_df[, c("gs_name", "gene_symbol")],
+                                           pvalueCutoff = pvalueCutoff)
+  
+  enrichedNeg <- clusterProfiler::enricher(topNeg,
+                                           TERM2GENE = m_df[, c("gs_name", "gene_symbol")],
+                                           pvalueCutoff = pvalueCutoff)
+  if(doPlot){
+    # Display dotplots if there are significant enrichment results
+    if(nrow(subset(enrichedPos@result, p.adjust < pvalueCutoff)) > 0) {
+      # print(clusterProfiler::dotplot(enrichedPos, showCategory = 10, title = paste0("Comp n = ", comp, " Top Pos Genes")))
+      print(clusterProfiler::dotplot(enrichedPos, showCategory = 10) + ggtitle(paste0("Comp n = ", comp, " Top Pos Genes")))
+      
+    }
+    
+    if(nrow(subset(enrichedNeg@result, p.adjust < pvalueCutoff)) > 0) {
+      # print(clusterProfiler::dotplot(enrichedNeg, showCategory = 10), title = paste0("Comp n = ", comp, " Top Neg Genes"))
+      print(clusterProfiler::dotplot(enrichedNeg, showCategory = 10) + ggtitle(paste0("Comp n = ", comp, " Top Neg Genes")))
+    }
+  } 
+  
+  
+  # Return the enrichment objects
+  return(list(enrichedPos = enrichedPos, enrichedNeg = enrichedNeg))
+}
+
+
+
+
+#' Run Bidirectional fgsea Analysis from Gene Loadings
+#'
+#' This function performs a bidirectional Gene Set Enrichment Analysis (GSEA) using the fgsea package
+#' on a ranked gene loadings vector. It retrieves gene sets using msigdbr for a specified species and category,
+#' executes fgsea (either using fgseaMultilevel or fgsea based on the selected method), and optionally generates
+#' plots for the top enriched pathways.
+#'
+#' @param loadings_vector A named numeric vector of gene loadings. The names must correspond to gene symbols.
+#' @param topN Integer specifying the number of top pathways to plot for each direction (default: 6).
+#' @param species Character string indicating the species for which to retrieve gene sets (default: "Homo sapiens").
+#' @param category Character string representing the gene set category from msigdbr (default: "H").
+#' @param pvalueCutoff Numeric value for the adjusted p-value cutoff to determine significant pathways (default: 0.05).
+#' @param doPlot Logical flag indicating whether to generate plots for the top pathways (default: FALSE).
+#' @param nperm Integer specifying the number of permutations for the fgsea function (default: 1000).
+#' @param method Character string specifying the fgsea method to use; "multilevel" for fgseaMultilevel,
+#'   or any other value to use the standard fgsea function (default: "multilevel").
+#'
+#' @return A list containing:
+#'   \describe{
+#'     \item{gsea_results}{A data frame with the full results from the GSEA analysis.}
+#'     \item{pos_results}{A data frame with significantly enriched pathways having positive Normalized Enrichment Scores (NES).}
+#'     \item{neg_results}{A data frame with significantly enriched pathways having negative NES.}
+#'   }
+#'
+#' @examples
+#' \dontrun{
+#'   # Create a named vector of gene loadings
+#'   loadings <- c(GeneA = 1.2, GeneB = -0.8, GeneC = 2.3)
+#'   
+#'   # Run the bidirectional fgsea analysis
+#'   result <- run_bidirectional_fgsea_from_loadings(loadings)
+#' }
+#'
+#' @export
+run_bidirectional_fgsea_from_loadings <- function(loadings,
+                                                  comp = 1,
+                                                  topN = 6, 
+                                                  species = "Homo sapiens", 
+                                                  category = "H",
+                                                  subcategory = NULL,
+                                                  pvalueCutoff = 0.05, 
+                                                  doPlot = FALSE,
+                                                  nperm = 1000,
+                                                  method = "multilevel") {
+  
+  loadings_vector = loadings[comp, ]
+  
+  if(sd(loadings_vector) > 0){ # 0 var vectors are useless right!!?!
+    # Check that loadings_vector has names representing gene symbols
+    if (is.null(names(loadings_vector))) {
+      stop("loadings_vector must have gene names as names")
+    }
+    
+    if(sum(duplicated(names(loadings_vector))) > 0){
+      print("removing duplicates")
+      loadings_vector = loadings_vector[!duplicated(names(loadings_vector))]
+      
+    }
+    
+    # Create a ranked gene vector (sorted in decreasing order)
+    ranked_genes <- sort(loadings_vector, decreasing = TRUE)
+    
+    # Load gene sets from msigdbr and split by pathway (gs_name)
+    m_df <- msigdbr::msigdbr(species = species, category = category, subcategory = subcategory) #%>%
+      # dplyr::select(gs_name, gene_symbol) %>%
+      # split(x = .$gene_symbol, f = .$gs_name)
+    if (!is.null(subcategory)) {
+      m_df <- subset(m_df, gs_subcat == subcategory)
+    }
+    gene_sets <- split(m_df$gene_symbol, m_df$gs_name)
+    
+    # Run fgsea
+    gsea_results <-  if (method == "multilevel") {
+      fgsea::fgseaMultilevel(pathways = gene_sets, stats = ranked_genes)
+    } else {
+      # fgsea::fgsea(pathways = gene_sets, stats = ranked_genes, nperm = 10000)
+      # Run fgsea with the ranked gene vector and gene sets
+      fgsea::fgsea(pathways = gene_sets, 
+                   stats = ranked_genes, 
+                   nperm = nperm)
+    }
+    
+    
+    
+    # Filter results based on the adjusted p-value cutoff
+    # sig_results <- subset(gsea_results, padj < pvalueCutoff)
+    
+    # Split significant results into positively and negatively enriched pathways
+    pos_results <- subset(gsea_results, NES > 0)
+    neg_results <- subset(gsea_results, NES < 0)
+    
+    
+    
+    
+    if (doPlot) {
+      # Plot top pathways for positive enrichment if any exist
+      if (nrow(pos_results) > 0) {
+        pos_plots <- plot_top_fgsea(pos_results, ranked_genes, gene_sets, top_n = topN, filterSig = F)
+        
+        # Create the bottom label plot
+        bottom_label <- ggdraw() + 
+          draw_label(paste0("Comp n=", comp, " - top pos"), fontface = "italic", size = 14)
+        
+        pos_plot_grid <- cowplot::plot_grid(plotlist = pos_plots, ncol = 2)
+        
+        # Combine the grouped plot with the bottom label vertically
+        combined_plot <- cowplot::plot_grid(pos_plot_grid, bottom_label, ncol = 1, rel_heights = c(1, 0.1))
+        
+        print(combined_plot)
+        
+        
+        
+      }
+      
+      # Plot top pathways for negative enrichment if any exist
+      if (nrow(neg_results) > 0) {
+        neg_plots <- plot_top_fgsea(neg_results, ranked_genes, gene_sets, top_n = topN, filterSig = F)
+        
+        
+        # Create the bottom label plot
+        bottom_label <- ggdraw() + 
+          draw_label(paste0("Comp n=", comp, " - top neg"), fontface = "italic", size = 14)
+        
+        neg_plot_grid <- cowplot::plot_grid(plotlist = neg_plots, ncol = 2)
+        
+        # Combine the grouped plot with the bottom label vertically
+        combined_plot <- cowplot::plot_grid(neg_plot_grid, bottom_label, ncol = 1, rel_heights = c(1, 0.1))
+        
+        print(combined_plot)
+        
+        
+      }
+    }
+    
+    # Return the full GSEA results and the split significant results
+    return(list(gsea_results = gsea_results,
+                pos_results = pos_results,
+                neg_results = neg_results))
+    
+  } else {
+    return(list(gsea_results = "",
+                pos_results = "",
+                neg_results = ""))
+  }
+  
 }
