@@ -406,3 +406,153 @@ FilterSpatial <- function(SerObj, nCount_Spatial_max=1000, nFeature_Spatial_min=
   return(SerObj)
   
 }
+
+
+ConvertFOVToSpatialSeurat <- function(object, assay.name = "Spatial", project.name = "ConvertedSpatial") {
+  
+  # **1. Validate Input**
+  if (is.null(object)) stop("Seurat object is NULL.")
+  #TODO this limits to only 1 image which for now is all we have but some seurat objects could have more.. 
+  if (!"FOV" %in% class(object@images[[1]])) stop("object@images[[1]] is not an FOV object.")
+  
+  # **2. Extract Expression Data from Old Seurat Object**
+  expr <- GetAssayData(object, layer = "counts")  # Extract raw counts
+  if (is.null(expr) || ncol(expr) == 0) stop("Expression data is missing in object.")
+  
+  # **3. Create a New Seurat Object**
+  object_new <- CreateSeuratObject(
+    counts = expr,
+    project = project.name,
+    assay = assay.name
+  )
+  
+  # **4. Extract Spatial Coordinates from the FOV Object**
+  positions <- data.frame(
+    barcode = object@images[[1]]@boundaries$centroids@cells,  # Extract barcodes
+    x = object@images[[1]]@boundaries$centroids@coords[, "x"],
+    y = object@images[[1]]@boundaries$centroids@coords[, "y"]
+  )
+  
+  # Ensure barcode alignment
+  rownames(positions) <- positions$barcode
+  positions <- positions[, c("x", "y")]  # Keep only coordinates
+  
+  # **5. Attach Spatial Image Data**
+  object_new@images$spatial_image <- new(
+    Class = "SlideSeq",
+    assay = assay.name,
+    key = "image_",
+    coordinates = positions
+  )
+  
+  # **6. Transfer Metadata from Old Seurat Object**
+  object_new@meta.data <- object@meta.data
+  
+  # **7. Ensure Proper Rowname Alignment**
+  rownames(object_new@meta.data) <- colnames(object_new)  # Align metadata rownames with cell names
+  
+  # **8. Return the New Spatial Seurat Object**
+  return(object_new)
+}
+
+
+
+#' SpatialPlotGridAligned
+#'
+#' Arrange multiple samples from a Seurat object in a grid layout using their spatial coordinates,
+#' preserving within‐sample morphology and annotating each panel with a metadata label.
+#'
+#' @param seurat_obj A \code{\link[Seurat]{Seurat}} object containing spatial metadata columns
+#'   \code{x_slide_mm}, \code{y_slide_mm}, \code{SampleID}, and the grouping and labeling columns.
+#' @param group.by Character. Name of the metadata column to use for coloring points (e.g.,
+#'   \code{"seurat_clusters"}).
+#' @param spacing Numeric. Vertical and horizontal spacing (in same units as slide coordinates)
+#'   between panels in the grid.
+#' @param ncol Integer. Number of columns in the output grid.
+#' @param label.by Character. Name of the metadata column to use for panel titles
+#'   (e.g., \code{"Tissue"} or \code{"SampleID"}).
+#' @param col_vector Named character vector. Custom colors for each level of \code{group.by}.
+#'   Names must match the factor levels; if \code{NULL}, a \code{viridis} discrete palette is used.
+#'
+#' @return A \code{\link[ggplot2]{ggplot}} object showing all samples arranged in a grid,
+#'   colored by the specified grouping and labeled by the specified metadata.
+#'
+#' @examples
+#' \dontrun{
+#'   # Default palette, 2 columns
+#'   SpatialPlotGridAligned(SerObjIntg, group.by = "seurat_clusters",
+#'                          spacing = 20, ncol = 2, label.by = "Tissue")
+#'
+#'   # Custom color vector
+#'   my_colors <- c("0" = "#440154", "1" = "#414487", "2" = "#2A788E")
+#'   SpatialPlotGridAligned(SerObjIntg, col_vector = my_colors)
+#' }
+#'
+#' @import ggplot2 dplyr tibble
+#' @export
+SpatialPlotGridAligned <- function(seurat_obj,
+                                   group.by = "seurat_clusters",
+                                   spacing = 2,
+                                   ncol = 2,
+                                   label.by = "Tissue",
+                                   col_vector = NULL) {
+  meta <- seurat_obj@meta.data
+  coords <- meta %>%
+    tibble::rownames_to_column(var = "cell") %>%
+    dplyr::select(cell, SampleID, x_slide_mm, y_slide_mm,
+                  group = !!sym(group.by), label = !!sym(label.by))
+  
+  bounds <- coords %>%
+    group_by(SampleID, label) %>%
+    summarise(
+      min_x = min(x_slide_mm),
+      min_y = min(y_slide_mm),
+      width = max(x_slide_mm) - min(x_slide_mm),
+      height = max(y_slide_mm) - min(y_slide_mm),
+      .groups = "drop"
+    )
+  
+  bounds <- bounds %>%
+    mutate(index = row_number() - 1,
+           col = index %% ncol,
+           row = index %/% ncol) %>%
+    group_by(col) %>%
+    mutate(offset_x = cumsum(lag(width + spacing, default = 0))) %>%
+    ungroup() %>%
+    group_by(row) %>%
+    mutate(offset_y = cumsum(lag(height + spacing, default = 0))) %>%
+    ungroup()
+  
+  coords_adj <- coords %>%
+    left_join(bounds, by = c("SampleID", "label")) %>%
+    mutate(
+      x_adj = (x_slide_mm - min_x) + offset_x,
+      y_adj = -(y_slide_mm - min_y) - offset_y
+    )
+  
+  titles <- coords_adj %>%
+    group_by(SampleID, label) %>%
+    summarise(
+      x_center = mean(range(x_adj)),
+      y_top = min(y_adj) - spacing / 2,
+      .groups = "drop"
+    )
+  
+  p <- ggplot(coords_adj, aes(x = x_adj, y = y_adj, color = group)) +
+    geom_point(size = 0.5, alpha = 0.6) +
+    geom_text(data = titles, aes(x = x_center, y = y_top, label = label),
+              inherit.aes = FALSE, size = 4, fontface = "bold") +
+    coord_fixed(expand = TRUE) +
+    theme_void() +
+    theme(legend.position = "right") +
+    ggtitle(paste("Spatial Grid View:", group.by))
+  
+  # Apply color mapping
+  if (!is.null(col_vector)) {
+    p <- p + scale_color_manual(values = col_vector)
+  } else {
+    p <- p + scale_color_viridis_d(option = "C")
+  }
+  
+  return(p)
+}

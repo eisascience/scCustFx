@@ -235,13 +235,22 @@ plot_heatmap_DEseq <- function(contrast_df,
   
   # — annotation setup —
   show_rows <- length(DEGs) <= 100
-  ann_cols <- meta_df[, c("PD1status", "seqrun"), drop = FALSE]
+  ann_cols <- meta_df[, c("PD1status", "seqrun", "Treatmentx", "Timepoint"), drop = FALSE]
   ann_colors <- list(
     PD1status = c(IgG = "#1b9e77", `anti-PD1` = "#d95f02"),
     seqrun     = setNames(
       brewer.pal(length(unique(meta_df$seqrun)), "Set2"),
       unique(meta_df$seqrun)
+    ),
+    Treatmentx     = setNames(
+      brewer.pal(length(unique(meta_df$Treatmentx)), "Set3"),
+      unique(meta_df$Treatmentx)
+    ),
+    Timepoint     = setNames(
+      brewer.pal(length(unique(as.character(meta_df$Timepoint))), "Set1")[1:length(unique(meta_df$Timepoint))],
+      unique(meta_df$Timepoint)
     )
+    
   )
   
   # — draw heatmap —
